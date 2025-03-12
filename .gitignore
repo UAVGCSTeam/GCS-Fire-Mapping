@@ -33,6 +33,9 @@ moc_*.cpp
 qrc_*.cpp
 ui_*.h
 
+# Ignore VSCode generated files
+.vscode/
+
 # Ignore system-specific files
 .DS_Store
 Thumbs.db
