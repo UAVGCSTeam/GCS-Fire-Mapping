@@ -264,11 +264,11 @@ Window {
         var coords = Coordinates.getAllCoordinates();
         mapController.setCenterPosition(coords[0].lat, coords[0].lon)
 
-        for (var i = 0; i < coords.length; i++) {
-            var coord = coords[i]
-            mapController.setLocationMarking(coord.lat, coord.lon)
-            console.log("Marked location:", coord.name, "at", coord.lat, coord.lon)
-        }
+        // for (var i = 0; i < coords.length; i++) {
+        //     var coord = coords[i]
+        //     mapController.setLocationMarking(coord.lat, coord.lon, "drone")
+        //     console.log("Marked location:", coord.name, "at", coord.lat, coord.lon)
+        // }
 
         fetch();
     }

@@ -1,4 +1,6 @@
 import QtQuick 2.15
+import QtQuick.Controls
+import Qt.labs.qmlmodels
 import QtLocation
 import QtPositioning
 
@@ -69,22 +71,39 @@ Item
             onTranslationChanged: (delta) => { mapview.pan(-delta.x, -delta.y); }
         }
         MapItemView
-        {
-            // Create list for all pins (Will be used to track drones later with some optimization)
-            model: ListModel { id: markersModel }
-            delegate: MapQuickItem
-            {
-                coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
-                anchorPoint.x: markerImage.width / 2
-                anchorPoint.y: markerImage.height
-                sourceItem: Image {
-                    id: markerImage
-                    source: "qrc:/resources/droneMapIconSVG.svg"  // Make sure this path is correct, currently in the CMake as this path
-                    width: 100
-                    height: 100
+                {
+                    model: mapController.markersModel()
+                    delegate: markerDelegateChooser
+                    DelegateChooser{
+                        id: markerDelegateChooser
+                        role: "type"
+                        DelegateChoice{
+                            id: droneDelegate
+                            roleValue: "drone"
+                            MapQuickItem{
+                                coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
+                                anchorPoint.x: markerImage.width / 2
+                                anchorPoint.y: markerImage.height
+                                sourceItem: Image {
+                                    id: markerImage
+                                    source: "qrc:/resources/droneMapIconSVG.svg"  // Make sure this path is correct, currently in the CMake as this path
+                                    width: 50
+                                    height: 50
+                                }
+                            }
+                        }
+                        DelegateChoice{
+                            id: fireMarkerDelegate
+                            roleValue: "fireMarker"
+                            MapCircle{
+                                center: QtPositioning.coordinate(model.latitude, model.longitude)
+                                radius: 2.5
+                                color: 'red'
+                                opacity: 0.3
+                            }
+                        }
+                    }
                 }
-            }
-        }
     }
 
     /*
@@ -96,9 +115,16 @@ Item
         function onCenterPositionChanged(lat, lon) {
             mapview.center = QtPositioning.coordinate(lat, lon)
         }
-        function onLocationMarked(lat, lon) {
-            markersModel.append({"latitude": lat, "longitude": lon})
-        }
+        // function onLocationMarked(marker) {
+        //     markersModel.append({
+        //         type: marker.type,
+        //         lastUpdated: marker.lastUpdated,
+        //         latitude: marker.latitude,
+        //         longitude: marker.longitude,
+        //     })
+        // }
+        //function onMarkerUpdated(marker){
+        //}
         function onMapTypeChanged(index) {
             if (index < mapview.supportedMapTypes.length) {
                 // Sets current maptype
@@ -107,14 +133,5 @@ Item
         }
     }
     Component.onCompleted: {
-            let drones = mapController.getAllDrones();
-            markersModel.clear();
-            for (let i = 0; i < drones.length; i++) {
-                markersModel.append({
-                    "name": drones[i].name,
-                    "latitude": drones[i].latitude,
-                    "longitude": drones[i].longitude
-                });
-            }
         }
 }

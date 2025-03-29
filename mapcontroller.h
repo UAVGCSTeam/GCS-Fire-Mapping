@@ -5,7 +5,11 @@
 #include <QVariant>
 #include <QPair>
 #include <QVector>
+#include <ctime>
+#include <QTimer> //for demonstration
 #include "droneclass.h"
+#include "markerclass.h"
+#include "markersmodel.h"
 
 /*
  * Qt uses Slots and Signals to create responsive UI/GUI applications.
@@ -32,26 +36,35 @@ public:
 
 public slots:
     void setCenterPosition(const QVariant &lat, const QVariant &lon);
-    void setLocationMarking(const QVariant &lat, const QVariant &lon);
+    void setLocationMarking(const QVariant &lat, const QVariant &lon, const QString &type);
     void changeMapType(int typeIndex);
 
     Q_INVOKABLE void addDrone(DroneClass* drone);
+    Q_INVOKABLE void addMarker(MarkerClass* marker);
+    Q_INVOKABLE void updateMarker(MarkerClass* marker,int index);
     Q_INVOKABLE QVariantList getAllDrones() const;
+
+    Q_INVOKABLE QAbstractListModel* markersModel() const {return m_markersModel;};
+    void droneDemo();
 signals:
     void centerPositionChanged(const QVariant &lat, const QVariant &lon);
-    void locationMarked(const QVariant &lat, const QVariant &lon);
+    //void locationMarked(MarkerClass* marker);
+    //void markerUpdated(MarkerClass* marker);
     void mapTypeChanged(int typeIndex);
 
 private:
     QPair<double, double> m_center;
-    QVector<QPair<double, double>> m_markers;
     int m_currentMapType;
     int m_supportedMapTypesCount;
 
     QVector<DroneClass*> m_drones;
+    MarkersModel* m_markersModel;
 
     void updateCenter(const QPair<double, double> &center);
-    void addMarker(const QPair<double, double> &position);
+
+    QTimer* m_droneTimer; //for demonstration
+    double m_angle;
+
 };
 
 #endif // MAPCONTROLLER_H
