@@ -53,7 +53,6 @@ public:
     void addItem(QObject* item) {
         beginInsertRows(QModelIndex(), m_markers.count(), m_markers.count());
         m_markers.append(item);
-        m_size++;
         endInsertRows();
     }
 
@@ -70,11 +69,10 @@ public:
             return nullptr;
         return qobject_cast<MarkerClass*>(m_markers.at(index));
     }
-    int size(){return m_size;}
+    int size(){return m_markers.size();}
 
 private:
     QList<QObject*> m_markers;
-    inline static int m_size = 0;
 };
 
 #endif // MARKERSMODEL_H
