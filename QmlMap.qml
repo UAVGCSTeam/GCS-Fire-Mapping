@@ -96,10 +96,22 @@ Item
                             id: fireMarkerDelegate
                             roleValue: "fireMarker"
                             MapCircle{
+                                visible: type !== "hidden"
                                 center: QtPositioning.coordinate(model.latitude, model.longitude)
                                 radius: 2.5
                                 color: 'red'
                                 opacity: 0.3
+                            }
+                        }
+                        DelegateChoice{
+                            id: smokeMarkerDelegate
+                            roleValue: "smokeMarker"
+                            MapCircle{
+                                visible: type !== "hidden"
+                                center: QtPositioning.coordinate(model.latitude, model.longitude)
+                                radius: 2.5
+                                color: 'black'
+                                opacity: 0.25
                             }
                         }
                     }
@@ -115,16 +127,7 @@ Item
         function onCenterPositionChanged(lat, lon) {
             mapview.center = QtPositioning.coordinate(lat, lon)
         }
-        // function onLocationMarked(marker) {
-        //     markersModel.append({
-        //         type: marker.type,
-        //         lastUpdated: marker.lastUpdated,
-        //         latitude: marker.latitude,
-        //         longitude: marker.longitude,
-        //     })
-        // }
-        //function onMarkerUpdated(marker){
-        //}
+
         function onMapTypeChanged(index) {
             if (index < mapview.supportedMapTypes.length) {
                 // Sets current maptype

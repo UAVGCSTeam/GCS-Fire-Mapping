@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include <QObject>
 #include <QList>
+#include <QStack>
 #include "markerclass.h"
 
 class MarkersModel : public QAbstractListModel
@@ -15,7 +16,6 @@ public:
         LatitudeRole,
         LongitudeRole,
         LastUpdatedRole
-        //need something to pull drone data, maybe pointer
     };
 
     explicit MarkersModel(QObject* parent = nullptr)
@@ -51,14 +51,37 @@ public:
     }
 
     void addItem(QObject* item) {
-        beginInsertRows(QModelIndex(), m_markers.count(), m_markers.count());
-        m_markers.append(item);
-        endInsertRows();
+        if(!openIndex.empty()){
+            replaceItem(item,openIndex.top());
+            openIndex.pop();
+        }else{
+            beginInsertRows(QModelIndex(), m_markers.count(), m_markers.count());
+            m_markers.append(item);
+            endInsertRows();
+        }
+    }
+    void deleteItem(QObject* item){
+        //does not remove item, save index for overwrite
+        int index = qobject_cast<MarkerClass*>(item)->getIndex();
+        if (index == -1)
+            return;
+        openIndex.push(index);
+        QModelIndex modelIndex = createIndex(index, 0);
+        emit dataChanged(modelIndex, modelIndex);
     }
 
-    void updateItem(QObject* item, int index){
-        if (index < 0 || index >= m_markers.size())
+    void updateItem(QObject* item){
+        int index = qobject_cast<MarkerClass*>(item)->getIndex();
+        if (index == -1)
             return;
+        qobject_cast<MarkerClass*>(item)->resetLastUpdated();
+        m_markers[index] = item;
+        QModelIndex modelIndex = createIndex(index, 0);
+        emit dataChanged(modelIndex, modelIndex);
+    }
+
+    void replaceItem(QObject* item, int index){
+        delete m_markers[index];
         m_markers[index] = item;
         QModelIndex modelIndex = createIndex(index, 0);
         emit dataChanged(modelIndex, modelIndex);
@@ -68,11 +91,19 @@ public:
         if (index < 0 || index >= m_markers.size())
             return nullptr;
         return qobject_cast<MarkerClass*>(m_markers.at(index));
+
+    }
+    int getOpenIndex(){
+        if(!openIndex.empty())
+            return openIndex.top();
+        else
+            return m_markers.size();
     }
     int size(){return m_markers.size();}
 
 private:
     QList<QObject*> m_markers;
+    QStack<int> openIndex;
 };
 
 #endif // MARKERSMODEL_H

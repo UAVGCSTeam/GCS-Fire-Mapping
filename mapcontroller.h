@@ -41,16 +41,18 @@ public slots:
 
     Q_INVOKABLE void addDrone(DroneClass* drone);
     Q_INVOKABLE void addMarker(MarkerClass* marker);
-    Q_INVOKABLE void updateMarker(MarkerClass* marker,int index);
+    Q_INVOKABLE void removeMarker(MarkerClass* marker);
+    Q_INVOKABLE void removeMarker(int index);
+    Q_INVOKABLE void updateMarker(MarkerClass* marker);
     Q_INVOKABLE QVariantList getAllDrones() const;
 
     Q_INVOKABLE QAbstractListModel* markersModel() const {return m_markersModel;};
     void droneDemo();
 signals:
     void centerPositionChanged(const QVariant &lat, const QVariant &lon);
+    void mapTypeChanged(int typeIndex);
     //void locationMarked(MarkerClass* marker);
     //void markerUpdated(MarkerClass* marker);
-    void mapTypeChanged(int typeIndex);
 
 private:
     QPair<double, double> m_center;
@@ -62,8 +64,12 @@ private:
 
     void updateCenter(const QPair<double, double> &center);
 
-    QTimer* m_droneTimer; //for demonstration
+    //for demo
+    QTimer* m_droneTimer;
     double m_angle;
+    double m_demoX = 34.0591;
+    double m_demoY = -117.82047;
+    bool alt = true;
 
 };
 

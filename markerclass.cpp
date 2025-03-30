@@ -27,24 +27,26 @@ MarkerClass::MarkerClass(const QString &input_type,
 
 }
 
-
-void MarkerClass::setUpdated(const time_t &inputTime){
-    if (m_lastUpdated != inputTime){
-        m_lastUpdated = inputTime;
-        emit updatedChanged();
+void MarkerClass::setLastUpdated(const time_t &inputLastUpdated){
+    if (m_lastUpdated != inputLastUpdated){
+        m_lastUpdated = inputLastUpdated;
+        //emit lastUpdatedChanged();
     }
+}
+void MarkerClass::resetLastUpdated(){
+    m_lastUpdated = time(0);
 }
 void MarkerClass::setType(const QString &inputRole){
     if (m_type != inputRole){
         m_type = inputRole;
-        emit typeChanged();
+        //emit typeChanged();
     }
 }
 void MarkerClass::setPosition(const QVector2D &pos){
     if (pos[0] != m_latitude || pos[1] != m_longitude ) {
         m_latitude = pos[0];
         m_longitude = pos[1];
-        emit positionChanged();
+        //emit positionChanged();
     }
 }
 void MarkerClass::setPosition(const double lat, const double lon){
@@ -53,12 +55,12 @@ void MarkerClass::setPosition(const double lat, const double lon){
 void MarkerClass::setLatitude(const double lat) {
     if (m_latitude != lat) {
         m_latitude = lat;
-        emit latitudeChanged();
+        //emit latitudeChanged();
     }
 }
 void MarkerClass::setLongitude(const double lon) {
     if (m_longitude != lon) {
         m_longitude = lon;
-        emit longitudeChanged();
+        //emit longitudeChanged();
     }
 }

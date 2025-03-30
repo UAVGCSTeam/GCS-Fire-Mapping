@@ -1,5 +1,6 @@
 #include "mapcontroller.h"
 #include <QDebug>
+#include <QtGlobal>
 
 /*
  * Used to emit signals to our QML functions.
@@ -47,19 +48,20 @@ MapController::MapController(QObject *parent)
     // drone5->setLattitude(34.0119);
     // drone5->setLongitude(-118.4916);
     // addDrone(drone5);
-
-    MarkerClass* drone1 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,m_markersModel->size(),this);
+    MarkerClass* drone1 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,m_markersModel->getOpenIndex(),this);
     addMarker(drone1);
-    MarkerClass* marker1 = new MarkerClass("fireMarker",34.05917,-117.82051,m_markersModel->size(),this);
-    addMarker(marker1);
-    MarkerClass* marker2 = new MarkerClass("fireMarker",34.05919,-117.82053,m_markersModel->size(),this);
-    addMarker(marker2);
-    MarkerClass* marker3 = new MarkerClass("fireMarker",34.05915,-117.82049,m_markersModel->size(),this);
-    addMarker(marker3);
-    MarkerClass* marker4 = new MarkerClass("fireMarker",34.05916,-117.82054,m_markersModel->size(),this);
-    addMarker(marker4);
-    MarkerClass* marker5 = new MarkerClass("fireMarker",34.05914,-117.82052,m_markersModel->size(),this);
-    addMarker(marker5);
+    MarkerClass* drone2 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,m_markersModel->getOpenIndex(),this);
+    addMarker(drone2);
+    // MarkerClass* marker1 = new MarkerClass("fireMarker",34.05917,-117.82051,m_markersModel->getOpenIndex(),this);
+    // addMarker(marker1);
+    // MarkerClass* marker2 = new MarkerClass("fireMarker",34.05919,-117.82053,m_markersModel->getOpenIndex(),this);
+    // addMarker(marker2);
+    // MarkerClass* marker3 = new MarkerClass("fireMarker",34.05915,-117.82049,m_markersModel->getOpenIndex(),this);
+    // addMarker(marker3);
+    // MarkerClass* marker4 = new MarkerClass("fireMarker",34.05916,-117.82054,m_markersModel->getOpenIndex(),this);
+    // addMarker(marker4);
+    // MarkerClass* marker5 = new MarkerClass("smokeMarker",34.05914,-117.82052,m_markersModel->getOpenIndex(),this);
+    // addMarker(marker5);
 
     //for demonstration
     connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
@@ -103,7 +105,8 @@ void MapController::setCenterPosition(const QVariant &lat, const QVariant &lon)
 
 void MapController::setLocationMarking(const QVariant &lat, const QVariant &lon, const QString &type)
 {
-    addMarker(new MarkerClass(type,lat.toDouble(),lon.toDouble(),m_markersModel->size(),this));
+    MarkerClass* temp = new MarkerClass(type,lat.toDouble(),lon.toDouble(),m_markersModel->size(),this);
+    addMarker(temp);
 }
 
 
@@ -134,9 +137,24 @@ void MapController::addMarker(MarkerClass* marker)
         //emit locationMarked(marker);
     }
 }
-void MapController::updateMarker(MarkerClass* marker, int index){
+void MapController::removeMarker(MarkerClass* marker){
     if(marker){
-        m_markersModel->updateItem(marker,index);
+        marker->setType("hidden");
+        m_markersModel->deleteItem(marker);
+        //emit markerUpdated(marker);
+    }
+}
+void MapController::removeMarker(int index){
+    MarkerClass* marker = m_markersModel->at(index);
+    if(marker){
+        marker->setType("hidden");
+        m_markersModel->deleteItem(marker);
+        //emit markerUpdated(marker);
+    }
+}
+void MapController::updateMarker(MarkerClass* marker){
+    if(marker){
+        m_markersModel->updateItem(marker);
         //emit markerUpdated(marker);
     }
 }
@@ -144,25 +162,53 @@ void MapController::updateMarker(MarkerClass* marker, int index){
 void MapController::droneDemo(){
     if(m_markersModel->size() == 0) return;
 
-    MarkerClass* drone = m_markersModel->at(0);
-
+    MarkerClass* drone1 = m_markersModel->at(0);
+    MarkerClass* drone2 = m_markersModel->at(1);
     // Define the center and radius for the circular path.
     const double centerLat = 34.05917;
     const double centerLon = -117.82051;
-    const double radius = 0.001;  // This is an approximate degree offset
+    const double centerLat2 = 34.06;
+    const double centerLon2 = -117.821;
+    const double radius = 0.0003;  // This is an approximate degree offset
+
     // Increment the angle
     m_angle += 10; // increase by 10 degrees per update (adjust as needed)
     if (m_angle >= 360)
         m_angle -= 360;
-
+    if(alt) {
+        m_demoX += 0.00003;
+        alt = false;
+    }
+    else{
+        m_demoY -= 0.00003;
+        alt = true;
+    }
+    if(m_demoY<-117.8208){
+        m_demoX = 34.0591;
+        m_demoY = -117.82047;
+        alt = true;
+        for(int i = 2; i < m_markersModel->size();i++){
+            removeMarker(i);
+        }
+    }else{
+        MarkerClass* temp = new MarkerClass("fireMarker",m_demoX,m_demoY,m_markersModel->getOpenIndex(),this);
+        addMarker(temp);
+    }
     // Convert angle to radians
     double rad = qDegreesToRadians(m_angle);
+    double offsetX = 0;
     double newLat = centerLat + radius * qCos(rad);
     double newLon = centerLon + radius * qSin(rad);
+    double newLat2 = centerLat2 + radius * qCos(-rad);
+    double newLon2 = centerLon2 + radius * qSin(-rad);
 
-    drone->setLatitude(newLat);
-    drone->setLongitude(newLon);
-    m_markersModel->updateItem(drone,0);
+    drone1->setLatitude(newLat);
+    drone1->setLongitude(newLon);
+    drone2->setLatitude(newLat2);
+    drone2->setLongitude(newLon2);
+
+    updateMarker(drone1);
+    updateMarker(drone2);
 
 }
 
