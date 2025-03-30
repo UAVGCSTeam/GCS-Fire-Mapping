@@ -8,7 +8,6 @@
 #include <ctime>
 #include <QTimer> //for demonstration
 #include "droneclass.h"
-#include "markerclass.h"
 #include "markersmodel.h"
 
 /*
@@ -41,9 +40,11 @@ public slots:
 
     Q_INVOKABLE void addDrone(DroneClass* drone);
     Q_INVOKABLE void addMarker(MarkerClass* marker);
+    Q_INVOKABLE void addMarker(DroneClass* drone);
     Q_INVOKABLE void removeMarker(MarkerClass* marker);
     Q_INVOKABLE void removeMarker(int index);
-    Q_INVOKABLE void updateMarker(MarkerClass* marker);
+    Q_INVOKABLE void updateMarker(MarkerClass* marker, double lat, double lon);
+    Q_INVOKABLE void updateMarker(DroneClass* marker, double lat, double lon);
     Q_INVOKABLE QVariantList getAllDrones() const;
 
     Q_INVOKABLE QAbstractListModel* markersModel() const {return m_markersModel;};
@@ -69,7 +70,8 @@ private:
     double m_angle;
     double m_demoX = 34.0591;
     double m_demoY = -117.82047;
-    bool alt = true;
+    int demo_i = 0;
+    int demo_j = 0;
 
 };
 

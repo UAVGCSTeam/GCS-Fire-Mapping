@@ -5,7 +5,8 @@
 #include <QVector>
 #include <QObject>
 #include <qvectornd.h>
-#include <cmath>
+//#include <cmath>
+#include "markerclass.h"
 
 class DroneClass : public QObject
 {
@@ -15,9 +16,9 @@ class DroneClass : public QObject
     Q_PROPERTY(double batteryLevel READ getBatteryLevel WRITE setBatteryLevel NOTIFY batteryChanged FINAL)
     Q_PROPERTY(QString role READ getRole WRITE setRole NOTIFY roleChanged FINAL)
     Q_PROPERTY(QString xbeeID READ getXbeeID WRITE setXbeeID NOTIFY xbeeIDChanged FINAL)
-    Q_PROPERTY(QVector3D position READ getPosition WRITE setPosition NOTIFY positionChanged FINAL)
-    Q_PROPERTY(double lattitude READ getLattitude WRITE setLattitude NOTIFY lattitudeChanged FINAL)  //temporary
-    Q_PROPERTY(double longitude READ getLongitude WRITE setLongitude NOTIFY longitudeChanged FINAL)  //temporary
+    // Q_PROPERTY(QVector3D position READ getPosition WRITE setPosition NOTIFY positionChanged FINAL)
+    // Q_PROPERTY(double latitude READ getLatitude WRITE setLatitude NOTIFY latitudeChanged FINAL)  //temporary
+    // Q_PROPERTY(double longitude READ getLongitude WRITE setLongitude NOTIFY longitudeChanged FINAL)  //temporary
     Q_PROPERTY(double altitude READ getAltitude WRITE setAltitude NOTIFY altitudeChanged FINAL)      //temporary
     Q_PROPERTY(QVector3D velocity READ getVelocity WRITE setVelocity NOTIFY velocityChanged FINAL)
     Q_PROPERTY(double airspeed READ getAirspeed WRITE setAirspeed NOTIFY airspeedChanged FINAL)      //temporary
@@ -63,23 +64,24 @@ public:
     void setXbeeID(const QString &inputXbeeID);
     double getBatteryLevel() const { return m_batteryLevel; };
     void setBatteryLevel(double batteryLevel);
-    QVector3D getPosition() const { return m_position; };
-    void setPosition(const QVector3D &pos);
+    QVector3D getPosition() const { return QVector3D(m_marker->getPosition(),m_altitude); };
+    //void setPosition(const QVector3D &pos);
     QVector3D getVelocity() const { return m_velocity; };
     void setVelocity(const QVector3D &vel);
     QVector3D getOrientation() const { return m_orientation; };
     void setOrientation(const QVector3D &ori);
-    double getLattitude() const {return m_lattitude; }; //temporary
-    void setLattitude(const double lattitude);          //temporary
-    double getLongitude() const {return m_longitude; }; //temporary
-    void setLongitude(const double longitude);          //temporary
+    double getLatitude() const {return m_marker->getLatitude(); }; //temporary
+    //void setLatitude(const double latitude);          //temporary
+    double getLongitude() const {return m_marker->getLongitude(); }; //temporary
+    //void setLongitude(const double longitude);          //temporary
     double getAltitude() const {return m_altitude; };   //temporary
     void setAltitude(const double altitude);            //temporary
     double getAirspeed() const {return m_airspeed; };   //temporary
     void setAirspeed(const double airspeed);            //temporary
+    MarkerClass* getMarker() const {return m_marker;};
 
     // QINVOKEABLE allows functions to be called in QML files
-    Q_INVOKABLE void setPosition(float x, float y, float z);
+    //Q_INVOKABLE void setPosition(float x, float y, float z);
     Q_INVOKABLE void setVelocity(float x, float y, float z);
     Q_INVOKABLE void setOrientation(float x, float y, float z);
 
@@ -90,9 +92,9 @@ signals:
     void roleChanged();
     void xbeeIDChanged();
     void batteryChanged();
-    void positionChanged();
-    void lattitudeChanged();  //temporary
-    void longitudeChanged();  //temporary
+    // void positionChanged();
+    // void lattitudeChanged();  //temporary
+    // void longitudeChanged();  //temporary
     void altitudeChanged();  //temporary
     void velocityChanged();
     void airspeedChanged();  //temporary
@@ -104,14 +106,15 @@ private:
     QString m_role;
     QString m_xbeeID;
     double m_batteryLevel;
-    QVector3D m_position;
-    double m_lattitude;  //temporary
-    double m_longitude;  //temporary
+    //QVector3D m_position;
+    //double m_lattitude;  //temporary
+    //double m_longitude;  //temporary
     double m_altitude;   //temporary
     QVector3D m_velocity;
     double m_airspeed;   //temporary
     QVector3D m_orientation;
 
+    MarkerClass* m_marker;
 };
 
 #endif // DroneClass_H

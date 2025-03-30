@@ -8,24 +8,19 @@ MarkerClass::MarkerClass(QObject *parent) :
     , m_latitude(-1)
     , m_longitude(-1)
     , m_index(-1)
-{
-
-}
+{}
 
 MarkerClass::MarkerClass(const QString &input_type,
                          const double &input_lat,
                          const double &input_lon,
-                         int index,
                          QObject *parent) :
     QObject(parent)
     , m_lastUpdated(time(0))
     , m_type(input_type)
     , m_latitude(input_lat)
     , m_longitude(input_lon)
-    , m_index(index)
-{
-
-}
+    , m_index(-1)
+{}
 
 void MarkerClass::setLastUpdated(const time_t &inputLastUpdated){
     if (m_lastUpdated != inputLastUpdated){
@@ -62,5 +57,10 @@ void MarkerClass::setLongitude(const double lon) {
     if (m_longitude != lon) {
         m_longitude = lon;
         //emit longitudeChanged();
+    }
+}
+void MarkerClass::setIndex(int index){
+    if (m_index != index){
+        m_index = index;
     }
 }

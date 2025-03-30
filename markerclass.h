@@ -24,7 +24,6 @@ public:
     MarkerClass(const QString &input_type,
                 const double &input_lat,
                 const double &input_long,
-                int input_index,
                 QObject *parent = nullptr);
     time_t getLastUpdated() const { return m_lastUpdated; };
     void setLastUpdated(const time_t &inputLastUpdated);
@@ -39,6 +38,7 @@ public:
     void setPosition(const double lat,const double lon);
     void setPosition(const QVector2D &pos);
     int getIndex() const {return m_index;};
+    void setIndex(int index);
 
 signals:
     //void lastUpdatedChanged();

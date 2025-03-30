@@ -1,6 +1,6 @@
 #include "mapcontroller.h"
 #include <QDebug>
-#include <QtGlobal>
+//#include <QtGlobal>
 
 /*
  * Used to emit signals to our QML functions.
@@ -48,10 +48,12 @@ MapController::MapController(QObject *parent)
     // drone5->setLattitude(34.0119);
     // drone5->setLongitude(-118.4916);
     // addDrone(drone5);
-    MarkerClass* drone1 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,m_markersModel->getOpenIndex(),this);
+    MarkerClass* drone1 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,this);
     addMarker(drone1);
-    MarkerClass* drone2 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,m_markersModel->getOpenIndex(),this);
+    MarkerClass* drone2 = new MarkerClass("drone",34.0600,-117.8210,this);
     addMarker(drone2);
+    MarkerClass* drone3 = new MarkerClass("drone",34.0615,-117.8225,this);
+    addMarker(drone3);
     // MarkerClass* marker1 = new MarkerClass("fireMarker",34.05917,-117.82051,m_markersModel->getOpenIndex(),this);
     // addMarker(marker1);
     // MarkerClass* marker2 = new MarkerClass("fireMarker",34.05919,-117.82053,m_markersModel->getOpenIndex(),this);
@@ -72,6 +74,12 @@ void MapController::addDrone(DroneClass* drone)
 {
     if (drone) {
         m_drones.append(drone);
+        MarkerClass* marker = drone->getMarker();
+        if(marker){
+            marker->setType("drone");
+            m_markersModel->addItem(marker);
+            //emit locationMarked(marker);
+        }
     }
 }
 
@@ -81,7 +89,7 @@ QVariantList MapController::getAllDrones() const
     for (const DroneClass* drone : m_drones) {
         QVariantMap droneData;
         droneData["name"] = drone->getName();
-        droneData["latitude"] = drone->getLattitude();
+        droneData["latitude"] = drone->getLatitude();
         droneData["longitude"] = drone->getLongitude();
         droneList.append(droneData);
     }
@@ -91,8 +99,8 @@ QVariantList MapController::getAllDrones() const
 void MapController::createDrone(const QString &input_name){
     DroneClass* temp = new DroneClass(this);
     temp->setName(input_name);
-    temp->setLattitude(34.06152);
-    temp->setLongitude(-117.82254);
+    // temp->setLattitude(34.06152);
+    // temp->setLongitude(-117.82254);
     addDrone(temp);
 }
 
@@ -105,7 +113,7 @@ void MapController::setCenterPosition(const QVariant &lat, const QVariant &lon)
 
 void MapController::setLocationMarking(const QVariant &lat, const QVariant &lon, const QString &type)
 {
-    MarkerClass* temp = new MarkerClass(type,lat.toDouble(),lon.toDouble(),m_markersModel->size(),this);
+    MarkerClass* temp = new MarkerClass(type,lat.toDouble(),lon.toDouble(),this);
     addMarker(temp);
 }
 
@@ -137,6 +145,18 @@ void MapController::addMarker(MarkerClass* marker)
         //emit locationMarked(marker);
     }
 }
+void MapController::addMarker(DroneClass* drone)
+{
+    if (drone) {
+        m_drones.append(drone);
+        MarkerClass* marker = drone->getMarker();
+        if(marker){
+            marker->setType("drone");
+            m_markersModel->addItem(marker);
+            //emit locationMarked(marker);
+        }
+    }
+}
 void MapController::removeMarker(MarkerClass* marker){
     if(marker){
         marker->setType("hidden");
@@ -144,6 +164,7 @@ void MapController::removeMarker(MarkerClass* marker){
         //emit markerUpdated(marker);
     }
 }
+//for demo purposes, not friendly with drone markers, not clear on drone version of remove
 void MapController::removeMarker(int index){
     MarkerClass* marker = m_markersModel->at(index);
     if(marker){
@@ -152,10 +173,23 @@ void MapController::removeMarker(int index){
         //emit markerUpdated(marker);
     }
 }
-void MapController::updateMarker(MarkerClass* marker){
+void MapController::updateMarker(MarkerClass* marker, double lat, double lon){
     if(marker){
+        marker->setLatitude(lat);
+        marker->setLongitude(lon);
         m_markersModel->updateItem(marker);
         //emit markerUpdated(marker);
+    }
+}
+void MapController::updateMarker(DroneClass* drone, double lat, double lon){
+    if(drone){
+        MarkerClass* marker = drone->getMarker();
+        if(marker){
+            marker->setLatitude(lat);
+            marker->setLongitude(lon);
+            m_markersModel->updateItem(marker);
+            //emit markerUpdated(marker);
+        }
     }
 }
 
@@ -164,35 +198,38 @@ void MapController::droneDemo(){
 
     MarkerClass* drone1 = m_markersModel->at(0);
     MarkerClass* drone2 = m_markersModel->at(1);
+    MarkerClass* drone3 = m_markersModel->at(2);
     // Define the center and radius for the circular path.
     const double centerLat = 34.05917;
     const double centerLon = -117.82051;
     const double centerLat2 = 34.06;
     const double centerLon2 = -117.821;
+    const double centerLat3 = 34.0615;
+    const double centerLon3 = -117.8225;
     const double radius = 0.0003;  // This is an approximate degree offset
 
     // Increment the angle
     m_angle += 10; // increase by 10 degrees per update (adjust as needed)
     if (m_angle >= 360)
         m_angle -= 360;
-    if(alt) {
+    if(demo_i < 10) {
+        MarkerClass* temp = new MarkerClass("fireMarker",m_demoX,m_demoY,this);
+        addMarker(temp);
         m_demoX += 0.00003;
-        alt = false;
+        demo_i++;
     }
-    else{
+    else if(demo_j<10){
+        m_demoX = 34.0591;
         m_demoY -= 0.00003;
-        alt = true;
-    }
-    if(m_demoY<-117.8208){
+        demo_i = 0;
+        demo_j++;
+    }else{
+        demo_j = 0;
         m_demoX = 34.0591;
         m_demoY = -117.82047;
-        alt = true;
-        for(int i = 2; i < m_markersModel->size();i++){
+        for(int i = 3; i < m_markersModel->size();i++){
             removeMarker(i);
         }
-    }else{
-        MarkerClass* temp = new MarkerClass("fireMarker",m_demoX,m_demoY,m_markersModel->getOpenIndex(),this);
-        addMarker(temp);
     }
     // Convert angle to radians
     double rad = qDegreesToRadians(m_angle);
@@ -201,14 +238,13 @@ void MapController::droneDemo(){
     double newLon = centerLon + radius * qSin(rad);
     double newLat2 = centerLat2 + radius * qCos(-rad);
     double newLon2 = centerLon2 + radius * qSin(-rad);
+    double newLat3 = centerLat3 + radius * qCos(rad);
+    double newLon3 = centerLon3 + radius * qSin(rad);
 
-    drone1->setLatitude(newLat);
-    drone1->setLongitude(newLon);
-    drone2->setLatitude(newLat2);
-    drone2->setLongitude(newLon2);
 
-    updateMarker(drone1);
-    updateMarker(drone2);
+    updateMarker(drone1,newLat,newLon);
+    updateMarker(drone2,newLat2,newLon2);
+    updateMarker(drone3,newLat3,newLon3);
 
 }
 

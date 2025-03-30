@@ -2,7 +2,7 @@
 
 #include <QString>
 #include <QDebug>
-#include <cmath>
+//#include <cmath>
 
 DroneClass::DroneClass(QObject *parent) :
     QObject(parent)
@@ -11,17 +11,34 @@ DroneClass::DroneClass(QObject *parent) :
     , m_role("")
     , m_xbeeID("")
     , m_batteryLevel(-1)
-    , m_position(QVector3D(-1, -1, -1))
-    , m_lattitude(-1) //temporary
-    , m_longitude(-1) //temporary
+    //, m_position(QVector3D(-1, -1, -1))
+    //, m_lattitude(-1) //temporary
+    //, m_longitude(-1) //temporary
+    //, m_altitude(-1)  //temporary
+    , m_velocity(QVector3D(-1, -1, -1))
+    , m_airspeed(-1)  //temporary
+    , m_orientation(QVector3D(-1, -1, -1))
+    , m_marker(new MarkerClass(this))
+{}
+DroneClass::DroneClass(const QString &input_name,
+                       const QString &input_role,
+                       const QString &input_xbeeAddress,
+                       QObject *parent) :
+    QObject(parent)
+    , m_name(input_name)
+    , m_xbeeAddress(input_xbeeAddress)
+    , m_xbeeID("")
+    , m_role(input_role)
+    , m_batteryLevel(-1)
+    //, m_position(QVector3D(-1, -1, -1))
+    //, m_lattitude(-1) //temporary
+    //, m_longitude(-1) //temporary
     , m_altitude(-1)  //temporary
     , m_velocity(QVector3D(-1, -1, -1))
     , m_airspeed(-1)  //temporary
     , m_orientation(QVector3D(-1, -1, -1))
-{
-
-}
-
+    , m_marker(new MarkerClass(this))
+{}
 DroneClass::DroneClass(const QString &input_name,
                        const QString &input_role,
                        const QString &input_xbeeID,
@@ -33,13 +50,14 @@ DroneClass::DroneClass(const QString &input_name,
     , m_xbeeID(input_xbeeID)
     , m_role(input_role)
     , m_batteryLevel(-1)
-    , m_position(QVector3D(-1, -1, -1))
-    , m_lattitude(-1) //temporary
-    , m_longitude(-1) //temporary
+    //, m_position(QVector3D(-1, -1, -1))
+    //, m_lattitude(-1) //temporary
+    //, m_longitude(-1) //temporary
     , m_altitude(-1)  //temporary
     , m_velocity(QVector3D(-1, -1, -1))
     , m_airspeed(-1)  //temporary
     , m_orientation(QVector3D(-1, -1, -1))
+    , m_marker(new MarkerClass(this))
 {
     qDebug() << "Created drone:" << m_name << "with ID:" << m_xbeeID << "and address:" << m_xbeeAddress;
 }
@@ -57,16 +75,16 @@ void DroneClass::processXbeeMessage(const QString &message) {
             QString icao = line.mid(5).trimmed();
             qDebug() << "ICAO:" << icao;
         }
-        else if (line.startsWith("Lattitude:")) {
-            double latitude = line.mid(10).trimmed().toDouble();
-            setLattitude(latitude);
-            qDebug() << "Updated lattitude:" << latitude;
-        }
-        else if (line.startsWith("Longitude:")) {
-            double longitude = line.mid(10).trimmed().toDouble();
-            setLongitude(longitude);
-            qDebug() << "Updated longitude:" << longitude;
-        }
+        // else if (line.startsWith("Lattitude:")) {
+        //     double latitude = line.mid(10).trimmed().toDouble();
+        //     setLattitude(latitude);
+        //     qDebug() << "Updated lattitude:" << latitude;
+        // }
+        // else if (line.startsWith("Longitude:")) {
+        //     double longitude = line.mid(10).trimmed().toDouble();
+        //     setLongitude(longitude);
+        //     qDebug() << "Updated longitude:" << longitude;
+        // }
         else if (line.startsWith("Altitude:")) {
             double altitude = line.mid(9).trimmed().toDouble();
             setAltitude(altitude);
@@ -101,7 +119,7 @@ void DroneClass::processXbeeMessage(const QString &message) {
     }
 
     // After updating individual coordinates, also update the position vector
-    setPosition(m_longitude, m_lattitude, m_altitude);
+    //setPosition(m_longitude, m_lattitude, m_altitude);
 }
 
 void DroneClass::setName(const QString &inputName){
@@ -134,26 +152,26 @@ void DroneClass::setBatteryLevel(double inputBatteryLevel){
         emit batteryChanged();
     }
 }
-void DroneClass::setPosition(const QVector3D &pos){
-    if (m_position != pos){
-        m_position = pos;
-        emit positionChanged();
-    }
-}
-//temporary
-void DroneClass::setLattitude(const double lat) {
-    if (m_lattitude != lat) {
-        m_lattitude = lat;
-        emit lattitudeChanged();
-    }
-}
-//temporary
-void DroneClass::setLongitude(const double longitude) {
-    if (m_longitude != longitude) {
-        m_longitude = longitude;
-        emit longitudeChanged();
-    }
-}
+// void DroneClass::setPosition(const QVector3D &pos){
+//     if (m_position != pos){
+//         m_position = pos;
+//         emit positionChanged();
+//     }
+// }
+// //temporary
+// void DroneClass::setLattitude(const double lat) {
+//     if (m_lattitude != lat) {
+//         m_lattitude = lat;
+//         emit lattitudeChanged();
+//     }
+// }
+// //temporary
+// void DroneClass::setLongitude(const double longitude) {
+//     if (m_longitude != longitude) {
+//         m_longitude = longitude;
+//         emit longitudeChanged();
+//     }
+// }
 //temporary
 void DroneClass::setAltitude(const double alt) {
     if (m_altitude != alt) {
@@ -181,10 +199,10 @@ void DroneClass::setOrientation(const QVector3D &ori){
     }
 }
 
-void DroneClass::setPosition(float x, float y, float z)
-{
-    setPosition(QVector3D(x, y, z));
-}
+// void DroneClass::setPosition(float x, float y, float z)
+// {
+//     setPosition(QVector3D(x, y, z));
+// }
 
 void DroneClass::setVelocity(float x, float y, float z)
 {

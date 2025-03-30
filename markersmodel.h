@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include <QObject>
 #include <QList>
+#include <QVector2D>
 #include <QStack>
 #include "markerclass.h"
 
@@ -52,9 +53,11 @@ public:
 
     void addItem(QObject* item) {
         if(!openIndex.empty()){
+            qobject_cast<MarkerClass*>(item)->setIndex(openIndex.top());
             replaceItem(item,openIndex.top());
             openIndex.pop();
         }else{
+            qobject_cast<MarkerClass*>(item)->setIndex(m_markers.size());
             beginInsertRows(QModelIndex(), m_markers.count(), m_markers.count());
             m_markers.append(item);
             endInsertRows();
@@ -93,17 +96,19 @@ public:
         return qobject_cast<MarkerClass*>(m_markers.at(index));
 
     }
-    int getOpenIndex(){
-        if(!openIndex.empty())
-            return openIndex.top();
-        else
-            return m_markers.size();
-    }
+    // int getOpenIndex(){
+    //     if(!openIndex.empty())
+    //         return openIndex.top();
+    //     else
+    //         return m_markers.size();
+    // }
     int size(){return m_markers.size();}
 
 private:
     QList<QObject*> m_markers;
     QStack<int> openIndex;
 };
+
+
 
 #endif // MARKERSMODEL_H
