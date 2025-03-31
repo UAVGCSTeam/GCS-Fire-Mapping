@@ -30,6 +30,8 @@ class MapController : public QObject
 public:
     explicit MapController(QObject *parent = nullptr);
     // Q_INVOKABLE void debugPrintDrones() const;
+
+    //this should probably take an input stream and not a name in the future
     Q_INVOKABLE void createDrone(const QString &input_name);
 
 
@@ -45,7 +47,8 @@ public slots:
     Q_INVOKABLE void removeMarker(int index);
     Q_INVOKABLE void updateMarker(MarkerClass* marker, double lat, double lon);
     Q_INVOKABLE void updateMarker(DroneClass* marker, double lat, double lon);
-    Q_INVOKABLE QVariantList getAllDrones() const;
+    Q_INVOKABLE void toggleTypeVisibility(const QString &type, bool vis);
+    //Q_INVOKABLE QVariantList getAllDrones() const;
 
     Q_INVOKABLE QAbstractListModel* markersModel() const {return m_markersModel;};
     void droneDemo();
@@ -68,11 +71,6 @@ private:
     //for demo
     QTimer* m_droneTimer;
     double m_angle;
-    double m_demoX = 34.0591;
-    double m_demoY = -117.82047;
-    int demo_i = 0;
-    int demo_j = 0;
-
 };
 
 #endif // MAPCONTROLLER_H

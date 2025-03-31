@@ -96,7 +96,7 @@ Item
                             id: fireMarkerDelegate
                             roleValue: "fireMarker"
                             MapCircle{
-                                visible: type !== "hidden"
+                                visible: visibility
                                 center: QtPositioning.coordinate(model.latitude, model.longitude)
                                 radius: 2.5
                                 color: 'red'
@@ -107,7 +107,7 @@ Item
                             id: smokeMarkerDelegate
                             roleValue: "smokeMarker"
                             MapCircle{
-                                visible: type !== "hidden"
+                                visible: visibility
                                 center: QtPositioning.coordinate(model.latitude, model.longitude)
                                 radius: 2.5
                                 color: 'black'

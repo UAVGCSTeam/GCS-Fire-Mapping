@@ -133,6 +133,28 @@ Window {
                 }
             }
         }
+        Menu{
+          id: viewMenu
+          title: qsTr("View")
+          MenuItem {
+            id: fireMarkersItem
+            text: qsTr("Fire Markers")
+            checkable: true
+            checked: true
+            onTriggered:{
+              mapController.toggleTypeVisibility("fireMarker",fireMarkersItem.checked);
+            }
+          }
+          MenuItem {
+            id: smokeMarkersItem
+            text: qsTr("Smoke Markers")
+            checkable: true
+            checked: true
+            onTriggered:{
+              mapController.toggleTypeVisibility("smokeMarker",fireMarkersItem.checked);
+            }
+          }
+        }
     }
 
     // Creates pop-up for Delete drone command
