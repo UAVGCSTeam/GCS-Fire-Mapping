@@ -151,7 +151,7 @@ Window {
             checkable: true
             checked: true
             onTriggered:{
-              mapController.toggleTypeVisibility("smokeMarker",fireMarkersItem.checked);
+              mapController.toggleTypeVisibility("smokeMarker",smokeMarkersItem.checked);
             }
           }
         }

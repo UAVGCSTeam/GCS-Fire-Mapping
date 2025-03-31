@@ -35,7 +35,17 @@ MapController::MapController(QObject *parent)
         lon = -117.82047;
         lat -= 0.00003;
     }
-
+    lat = 34.06;
+    lon =  -117.821;
+    for(int i = 0; i < 32; i++){
+        for(int j = 0; j < 32; j++){
+            MarkerClass* temp = new MarkerClass("smokeMarker",lat,lon,this);
+            addMarker(temp);
+            lon += 0.00003;
+        }
+        lon = -117.821;
+        lat -= 0.00003;
+    }
 
     //for demonstration
     connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
