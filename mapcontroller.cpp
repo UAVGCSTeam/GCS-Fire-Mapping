@@ -136,6 +136,10 @@ void MapController::addMarker(MarkerClass* marker, bool hitDeconflictEnabled)
             //ignore repeat hits
             QPair<double,double> temp(marker->getLatitude(),marker->getLongitude());
             if(markerHits.find(temp) == markerHits.end()){
+                if(marker->getType() == "fireMarker") markerHits[temp] = 1;
+                else markerHits[temp] = 0;
+                m_markersModel->addItem(marker);
+            }else if(markerHits[temp] < 1 && marker->getType() == "fireMarker"){
                 markerHits[temp] = 1;
                 m_markersModel->addItem(marker);
             }
@@ -156,9 +160,6 @@ void MapController::removeMarker(MarkerClass* marker, bool hitDeconflictRecover)
         }
 
     }
-}
-void MapController::removeMarker(int index){
-    removeMarker(m_markersModel->at(index));
 }
 void MapController::updateMarker(MarkerClass* marker, const double &lat, const double &lon){
     if(marker){

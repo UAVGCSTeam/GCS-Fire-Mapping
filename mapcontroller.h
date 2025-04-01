@@ -51,7 +51,6 @@ public slots:
     Q_INVOKABLE void addDrone(DroneClass* drone);
     Q_INVOKABLE void addMarker(MarkerClass* marker, bool hitDeconflictEnabled = false);
     Q_INVOKABLE void removeMarker(MarkerClass* marker, bool hitDeconflictRecover = false);
-    Q_INVOKABLE void removeMarker(int index);
     Q_INVOKABLE void updateMarker(MarkerClass* marker, const  double &lat, const double &lon);
     Q_INVOKABLE void updateDrone(DroneClass* marker, const double &lat, const double &lon);
     Q_INVOKABLE void toggleTypeVisibility(const QString &type, bool vis);
