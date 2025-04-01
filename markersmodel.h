@@ -52,10 +52,12 @@ public:
     }
     void addItem(QObject* item) {
         if(!openIndex.empty()){
+            qDebug() << "replacing";
             qobject_cast<MarkerClass*>(item)->setIndex(openIndex.top());
             replaceItem(item,openIndex.top());
             openIndex.pop();
         }else{
+            qDebug() << "appending";
             qobject_cast<MarkerClass*>(item)->setIndex(m_markers.size());
             beginInsertRows(QModelIndex(), m_markers.count(), m_markers.count());
             m_markers.append(item);

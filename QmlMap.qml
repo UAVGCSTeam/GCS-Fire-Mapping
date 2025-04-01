@@ -98,7 +98,7 @@ Item
                             MapCircle{
                                 visible: visibility
                                 center: QtPositioning.coordinate(model.latitude, model.longitude)
-                                radius: 2.5
+                                radius: 2.53
                                 color: 'red'
                                 opacity: 0.3
                             }
@@ -109,7 +109,7 @@ Item
                             MapCircle{
                                 visible: visibility
                                 center: QtPositioning.coordinate(model.latitude, model.longitude)
-                                radius: 2.5
+                                radius: 2.53
                                 color: 'black'
                                 opacity: 0.25
                             }
@@ -127,7 +127,6 @@ Item
         function onCenterPositionChanged(lat, lon) {
             mapview.center = QtPositioning.coordinate(lat, lon)
         }
-
         function onMapTypeChanged(index) {
             if (index < mapview.supportedMapTypes.length) {
                 // Sets current maptype
