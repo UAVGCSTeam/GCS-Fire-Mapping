@@ -133,15 +133,21 @@ void MapController::updateCenter(const QPair<double, double> &center)
 void MapController::addMarker(MarkerClass* marker, bool hitDeconflictEnabled)
 {
     if(marker){
+        int type = 0;
         if(marker->getType() == "drone")
             return;
+        else if(marker->getType() == "fireMarker")
+            type = 2;
+        else if(marker->getType() == "smokeMarker")
+            type = 1;
+        marker->setVisibility(type & m_vis);
         if(hitDeconflictEnabled){
             //round coords to be divisible by 0.000035
             roundCoords(marker);
             //ignore repeat hits
             QPair<double,double> temp(marker->getLatitude(),marker->getLongitude());
             if(markerHits.find(temp) == markerHits.end()){
-                if(marker->getType() == "fireMarker") markerHits[temp] = 1;
+                if(type == 2) markerHits[temp] = 1;
                 else markerHits[temp] = 0;
                 m_markersModel->addItem(marker);
             }else if(markerHits[temp] < 1 && marker->getType() == "fireMarker"){
@@ -186,6 +192,8 @@ void MapController::updateDrone(DroneClass* drone, const double &lat, const doub
     }
 }
 void MapController::toggleTypeVisibility(const QString &type, bool vis){
+    if(type == "fireMarker") m_vis = m_vis ^ 2;
+    if(type == "smokemarker") m_vis = m_vis ^ 1;
     for(int i = 0; i < m_markersModel->size(); i++){
         if(m_markersModel->at(i)->getType() == type){
             m_markersModel->at(i)->setVisibility(vis);
@@ -199,12 +207,12 @@ void MapController::droneDemo(){
 
     if(state == 0){
         for(int i = 0; i < 100; i++){
-            addMarker(markerArray[i],true);
+            addMarker(markerArray[i]);
         }
         state = 1;
     }else if(state == 11){
         for(int i = 0; i < 100; i++){
-            removeMarker(markerArray[i],true);
+            removeMarker(markerArray[i]);
         }
         double lat = 34.0585;
         double lon =  -117.821;

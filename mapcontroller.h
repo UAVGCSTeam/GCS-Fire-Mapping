@@ -77,6 +77,7 @@ private:
     MarkersModel* m_markersModel;
     MarkersModel* m_droneMarkersModel;
     std::unordered_map<QPair<double,double>,int,QPairHash> markerHits;
+    int m_vis = 3;
 
     void updateCenter(const QPair<double, double> &center);
     void roundCoords(MarkerClass* marker);
