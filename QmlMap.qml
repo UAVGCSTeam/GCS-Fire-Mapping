@@ -71,6 +71,7 @@ Item
             onTranslationChanged: (delta) => { mapview.pan(-delta.x, -delta.y); }
         }
         MapItemView{
+            //connects to m_markersModel
             model: mapController.markersModel()
             delegate: markerDelegateChooser
             opacity: 0.25
@@ -142,26 +143,17 @@ Item
             }
         }
         MapItemView{
-            //may want to have a seperate list for drones in the future
-            model: mapController.markersModel()
-            delegate: droneDelegateChooser
-            DelegateChooser{
-                id: droneDelegateChooser
-                role: "type"
-                DelegateChoice{
-                    id: droneDelegate
-                    roleValue: "drone"
-                    MapQuickItem{
-                        coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
-                        anchorPoint.x: markerImage.width / 2
-                        anchorPoint.y: markerImage.height
-                        sourceItem: Image {
-                            id: markerImage
-                            source: "qrc:/resources/droneMapIconSVG.svg"  // Make sure this path is correct, currently in the CMake as this path
-                            width: 50
-                            height: 50
-                        }
-                    }
+            //connects to m_droneMarkersModel
+            model: mapController.droneMarkersModel()
+            delegate: MapQuickItem{
+                coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
+                anchorPoint.x: markerImage.width / 2
+                anchorPoint.y: markerImage.height
+                sourceItem: Image {
+                    id: markerImage
+                    source: "qrc:/resources/droneMapIconSVG.svg"  // Make sure this path is correct, currently in the CMake as this path
+                    width: 50
+                    height: 50
                 }
             }
         }

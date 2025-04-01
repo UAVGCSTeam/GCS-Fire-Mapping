@@ -38,29 +38,32 @@ class MapController : public QObject
 public:
     explicit MapController(QObject *parent = nullptr);
     // Q_INVOKABLE void debugPrintDrones() const;
-
-    //this should probably take an input stream and not a name in the future
     Q_INVOKABLE void createDrone(const QString &input_name);
-
 
 public slots:
     void setCenterPosition(const QVariant &lat, const QVariant &lon);
     void setLocationMarking(const QVariant &lat, const QVariant &lon, const QString &type);
     void changeMapType(int typeIndex);
 
+    //most of these should probably only be called in mapcontroller
+    //and dont need slots or signals because markersModel handles most of it
     Q_INVOKABLE void addDrone(DroneClass* drone);
-    Q_INVOKABLE void addMarker(MarkerClass* marker, bool hitDeconflictEnabled = false);
-    Q_INVOKABLE void removeMarker(MarkerClass* marker, bool hitDeconflictRecover = false);
+    Q_INVOKABLE void addMarker(MarkerClass* marker, bool hitDeconflictEnabled = true);
+    Q_INVOKABLE void removeMarker(MarkerClass* marker, bool hitDeconflictRecover = true);
     Q_INVOKABLE void updateMarker(MarkerClass* marker, const  double &lat, const double &lon);
     Q_INVOKABLE void updateDrone(DroneClass* marker, const double &lat, const double &lon);
-    Q_INVOKABLE void toggleTypeVisibility(const QString &type, bool vis);
+    //List should be no longer necessary, use markersModel
     //Q_INVOKABLE QVariantList getAllDrones() const;
-
+    //returns the list that connects to qmlmap.qml
     Q_INVOKABLE QAbstractListModel* markersModel() const {return m_markersModel;};
+    Q_INVOKABLE QAbstractListModel* droneMarkersModel() const {return m_droneMarkersModel;};
+    //called in main for our fire and smoke layer toggle
+    Q_INVOKABLE void toggleTypeVisibility(const QString &type, bool vis);
     void droneDemo();
 signals:
     void centerPositionChanged(const QVariant &lat, const QVariant &lon);
     void mapTypeChanged(int typeIndex);
+    //redundant with markersModel
     //void locationMarked(MarkerClass* marker);
     //void markerUpdated(MarkerClass* marker);
 
@@ -70,7 +73,9 @@ private:
     int m_supportedMapTypesCount;
 
     QVector<DroneClass*> m_drones;
+    //data structures for fire markers and hit deconfliction
     MarkersModel* m_markersModel;
+    MarkersModel* m_droneMarkersModel;
     std::unordered_map<QPair<double,double>,int,QPairHash> markerHits;
 
     void updateCenter(const QPair<double, double> &center);

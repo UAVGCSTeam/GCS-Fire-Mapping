@@ -15,17 +15,18 @@ MapController::MapController(QObject *parent)
     , m_supportedMapTypesCount(3)
     , m_droneTimer(new QTimer(this))
     , m_angle(0)
+    , m_markersModel(new MarkersModel(this))
+    , m_droneMarkersModel(new MarkersModel(this))
 {
-    m_markersModel = new MarkersModel(this);
-
+    //everything in this block is for demo purposes
     // Populate with dummy drone objects for demo
     //uses markers for simplicity but drones should normally use droneClass and addDrone
-    MarkerClass* drone1 = new MarkerClass("drone",34.059174611493965,-117.82051240067321,this);
-    addMarker(drone1);
-    MarkerClass* drone2 = new MarkerClass("drone",34.0600,-117.8210,this);
-    addMarker(drone2);
-    MarkerClass* drone3 = new MarkerClass("drone",34.0615,-117.8225,this);
-    addMarker(drone3);
+    DroneClass* drone1 = new DroneClass(this);
+    addDrone(drone1);
+    DroneClass* drone2 = new DroneClass(this);
+    addDrone(drone2);
+    DroneClass* drone3 = new DroneClass(this);
+    addDrone(drone3);
     //populate with fire and smoke markers, unaligned
     double lat = 34.0591;
     double lon =  -117.82047;
@@ -51,7 +52,7 @@ MapController::MapController(QObject *parent)
             markerArray[i+j*10] = new MarkerClass("fireMarker",lat-inc*j,lon+inc*i,this);
         }
     }
-    //for demonstration
+    //for time to flow in demo
     connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
     m_droneTimer->start(100);
 }
@@ -60,7 +61,7 @@ void MapController::addDrone(DroneClass* drone)
 {
     if (drone) {
         m_drones.append(drone);
-        addMarker(drone->getMarker());
+        m_droneMarkersModel->addItem(drone->getMarker());
     }
 }
 
@@ -106,7 +107,6 @@ void MapController::setLocationMarking(const QVariant &lat, const QVariant &lon,
     addMarker(temp);
 }
 
-
 // emit sends the data that our cpp logic did to our QML files
 void MapController::changeMapType(int index)
 {
@@ -127,9 +127,14 @@ void MapController::updateCenter(const QPair<double, double> &center)
     }
 }
 
+//adds marker to m_markersModel
+//if hitDeconflict is true then it will round the coordinates and
+//check if the coordinates have been received before in hash table
 void MapController::addMarker(MarkerClass* marker, bool hitDeconflictEnabled)
 {
     if(marker){
+        if(marker->getType() == "drone")
+            return;
         if(hitDeconflictEnabled){
             //round coords to be divisible by 0.000035
             roundCoords(marker);
@@ -148,9 +153,10 @@ void MapController::addMarker(MarkerClass* marker, bool hitDeconflictEnabled)
         }
     }
 }
-//should not be used to delete drone->markers, may add a type check in the future
 void MapController::removeMarker(MarkerClass* marker, bool hitDeconflictRecover){
     if(marker){
+        if(marker->getType() == "drone")
+            return;
         if(hitDeconflictRecover){
             QPair<double,double> temp(marker->getLatitude(),marker->getLongitude());
             markerHits.erase(temp);
@@ -161,8 +167,11 @@ void MapController::removeMarker(MarkerClass* marker, bool hitDeconflictRecover)
 
     }
 }
+//need removeDrone function
 void MapController::updateMarker(MarkerClass* marker, const double &lat, const double &lon){
     if(marker){
+        if(marker->getType() == "drone")
+            return;
         marker->setLatitude(lat);
         marker->setLongitude(lon);
         m_markersModel->updateItem(marker);
@@ -170,7 +179,10 @@ void MapController::updateMarker(MarkerClass* marker, const double &lat, const d
 }
 void MapController::updateDrone(DroneClass* drone, const double &lat, const double &lon){
     if(drone){
-        updateMarker(drone->getMarker(),lat,lon);
+        MarkerClass* marker = drone->getMarker();
+        marker->setLatitude(lat);
+        marker->setLongitude(lon);
+        m_droneMarkersModel->updateItem(marker);
     }
 }
 void MapController::toggleTypeVisibility(const QString &type, bool vis){
@@ -183,11 +195,7 @@ void MapController::toggleTypeVisibility(const QString &type, bool vis){
 }
 
 void MapController::droneDemo(){
-    if(m_markersModel->size() == 0) return;
-
-    MarkerClass* drone1 = m_markersModel->at(0);
-    MarkerClass* drone2 = m_markersModel->at(1);
-    MarkerClass* drone3 = m_markersModel->at(2);
+    if(m_droneMarkersModel->size() == 0 || m_drones.size() == 0) return;
 
     if(state == 0){
         for(int i = 0; i < 100; i++){
@@ -234,9 +242,9 @@ void MapController::droneDemo(){
     double newLon3 = centerLon3 + radius * qSin(rad);
 
 
-    updateMarker(drone1,newLat,newLon);
-    updateMarker(drone2,newLat2,newLon2);
-    updateMarker(drone3,newLat3,newLon3);
+    updateDrone(m_drones[0],newLat,newLon);
+    updateDrone(m_drones[1],newLat2,newLon2);
+    updateDrone(m_drones[2],newLat3,newLon3);
 }
 
 

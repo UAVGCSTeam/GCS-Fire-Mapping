@@ -50,6 +50,7 @@ public:
     void setPosition(const double &inputLat,const double inputLon){
         setPosition(QVector2D(inputLat, inputLon));
     };
+    //probably not necessary
     void setPosition(const QVector2D &pos){
         m_latitude = pos[0];
         m_longitude = pos[1];

@@ -6,10 +6,15 @@
 #include <QStack>
 #include "markerclass.h"
 
+
+//QML requires an QAbstractListModel if we are to expose a c++ data structure to our QmlMap.qml
+//We can format this list as needed so it can be used in ListView while maintaining access properties of an array
+//Current implementation only works with MarkersClass*, but QObject* is still used for conveinence
 class MarkersModel : public QAbstractListModel
 {
     Q_OBJECT
 public:
+    //simply for readability in data
     enum MarkerRoles {
         TypeRole = Qt::UserRole + 1,
         LatitudeRole,
@@ -21,10 +26,12 @@ public:
     explicit MarkersModel(QObject* parent = nullptr)
         : QAbstractListModel(parent) {}
 
+    //Required for QML to parse the list
     int rowCount(const QModelIndex &parent = QModelIndex()) const override {
         Q_UNUSED(parent);
         return m_markers.count();
     }
+    //Required for QML to parse the list, returns data member based on role/member variable
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override {
         if (!index.isValid() || index.row() < 0 || index.row() >= m_markers.count())
             return QVariant();
@@ -41,6 +48,7 @@ public:
         }
         return QVariant();
     }
+    //hashes string into bytearray for faster look up speed
     QHash<int, QByteArray> roleNames() const override {
         QHash<int, QByteArray> roles;
         roles[TypeRole] = "type";
@@ -50,6 +58,7 @@ public:
         roles[VisibilityRole] = "visibility";
         return roles;
     }
+    //check for open index to replace otherwise add
     void addItem(QObject* item) {
         if(!openIndex.empty()){
             qobject_cast<MarkerClass*>(item)->setIndex(openIndex.top());
@@ -62,8 +71,8 @@ public:
             endInsertRows();
         }
     }
+    //marks for replacement, placing its index on the stack and then hides
     void deleteItem(QObject* item){
-        //does not remove item, save index for overwrite and hide/set
         int index = qobject_cast<MarkerClass*>(item)->getIndex();
         if (index == -1)
             return;
@@ -73,6 +82,7 @@ public:
         QModelIndex modelIndex = createIndex(index, 0);
         emit dataChanged(modelIndex, modelIndex);
     }
+    //sets lastUpdated to current time, otherwise signals data change at a specific index
     void updateItem(QObject* item){
         int index = qobject_cast<MarkerClass*>(item)->getIndex();
         if (index == -1)
@@ -82,6 +92,7 @@ public:
         QModelIndex modelIndex = createIndex(index, 0);
         emit dataChanged(modelIndex, modelIndex);
     }
+    //signals data change without updating current time
     void refreshItem(QObject* item){
         int index = qobject_cast<MarkerClass*>(item)->getIndex();
         if (index == -1)
@@ -89,6 +100,7 @@ public:
         QModelIndex modelIndex = createIndex(index, 0);
         emit dataChanged(modelIndex, modelIndex);
     }
+    //deletes overwritten before assigning pointer to index
     void replaceItem(QObject* item, int index){
         delete m_markers[index];
         m_markers[index] = item;
@@ -104,7 +116,9 @@ public:
     int size(){return m_markers.size();}
 
 private:
+    //holds the markers!
     QList<QObject*> m_markers;
+    //used for tracking deleted members
     QStack<int> openIndex;
 };
 

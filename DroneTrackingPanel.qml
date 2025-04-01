@@ -280,7 +280,7 @@ Rectangle {
         updateDroneListModel(fullDroneList) // Initially display all drones
     }
 
-    // Function to update the displayed ListModel based on a filtered list
+    //Function to update the displayed ListModel based on a filtered list
     function updateDroneListModel(filteredList) {
         droneListModel.clear()
         filteredList.forEach(drone => {

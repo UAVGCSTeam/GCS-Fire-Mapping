@@ -55,12 +55,10 @@ QVariantList DroneController::getDroneList() const {
         // Adds placeholder values for status and battery and leave other fields blank
         droneMap["status"] = "Not Connected"; // or "Pending" or another placeholder
         droneMap["battery"] = "NA"; // static placeholder battery percent
-
-        // uncomment to leave blank (not needed)
-        /*droneMap["lattitude"] = ""; // leave as blank or add a default value
+        droneMap["latitude"] = "";
         droneMap["longitude"] = "";
         droneMap["altitude"] = "";
-        droneMap["airspeed"] = "";*/
+        droneMap["airspeed"] = "";
 
         list.append(droneMap);
     }
