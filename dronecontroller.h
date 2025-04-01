@@ -1,13 +1,13 @@
 #ifndef DRONECONTROLLER_H
 #define DRONECONTROLLER_H
 
-#include <QObject>
 #include <QList>
+#include <QObject>
+#include <QSharedMemory>
+#include <QSharedPointer>
+#include <QTimer>
 #include "backend/dbmanager.h"
 #include "droneclass.h"
-#include <QSharedPointer>
-#include <QSharedMemory>
-#include <QTimer>
 // #include "drone.h"
 
 /*
@@ -15,7 +15,6 @@
  * It allows for communication between QML and C++.
  * https://doc.qt.io/qt-6/signalsandslots.html
 */
-
 
 /*
  * Button Press:
@@ -27,7 +26,8 @@
 
 // Drone Controller will notify UI
 // Serves as a middle man from UI and backend.
-class DroneController : public QObject {
+class DroneController : public QObject
+{
     Q_OBJECT
 public:
     // idk how to pass the parent function
@@ -41,12 +41,19 @@ public:
     Q_INVOKABLE bool isSimulationMode() const;
 
 public slots:
-    void saveDrone(const QString &name, const QString &role, const QString &xbeeId, const QString &xbeeAddress);
-    void updateDrone(const QString &oldXbeeId, const QString &name, const QString &role, const QString &xbeeId, const QString &xbeeAddress);
+    void saveDrone(const QString &name,
+                   const QString &role,
+                   const QString &xbeeId,
+                   const QString &xbeeAddress);
+    void updateDrone(const QString &oldXbeeId,
+                     const QString &name,
+                     const QString &role,
+                     const QString &xbeeId,
+                     const QString &xbeeAddress);
     void deleteDrone(const QString &xbeeId);
     void deleteALlDrones_UI();
 
-// Declaration for retrieving the drone list
+    // Declaration for retrieving the drone list
 public:
     Q_INVOKABLE QVariantList getDroneList() const;
     // Process data recieved from XBee via shared memory
@@ -80,6 +87,5 @@ private:
     QString getDataFilePath();
     QString getConfigFilePath() const;
 };
-
 
 #endif // DRONECONTROLLER_H

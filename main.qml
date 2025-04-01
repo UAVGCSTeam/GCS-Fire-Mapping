@@ -247,15 +247,54 @@ Window {
             margins: 10
         }
     }
+// Added control panel for toggling fire, wind, time, and smoke layers
 
-    /*
-      Connections is how we connect our QML and QML together
+    Rectangle {
+        id: controlPanel
+        width: 280
+        height: 50
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 20
+        color: "white"
+        radius: 8
+        border.color: "#d0d0d0"
+        border.width: 1
+        z: 100
 
-      The question becomes; do we need to use cpp in our QML UI elements?
-      No, we don't.
-      We actually want certain UI to be self-contained as it becomes more modular.
-      Despite this some UI needs to be connected to cpp, especially if it has more complex logic.
-    */
+        Row {
+            anchors.centerIn: parent
+            spacing: 6
+
+            Repeater {
+                model: ["fire", "wind", "time", "smoke"]
+
+                delegate: Rectangle {
+                    width: 50
+                    height: 30
+                    radius: 6
+                    color: "#f8f8f8"
+                    border.color: "black"
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData
+                        font.bold: true
+                        font.pointSize: 10
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            console.log(modelData + " toggled")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Connections {
     }
 

@@ -1,28 +1,30 @@
 #include "dronecontroller.h"
-#include "droneclass.h"
 #include <QDebug>
+#include "droneclass.h"
 
-#include <QTimer>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QFile>
-#include <QDir>
-#include <QCoreApplication>
-#include <QTextStream>
 #include <QStandardPaths>
+#include <QTextStream>
+#include <QTimer>
 
 // DATA PATH
 #ifdef _WIN32
 // Try both the original path and the user's temp directory
-#define DEFAULT_DATA_FILE_PATH "C:/tmp/xbee_data.json"  // Windows path
+#define DEFAULT_DATA_FILE_PATH "C:/tmp/xbee_data.json" // Windows path
 #else
-#define DEFAULT_DATA_FILE_PATH "/tmp/xbee_data.json"  // Unix/Mac path
+#define DEFAULT_DATA_FILE_PATH "/tmp/xbee_data.json" // Unix/Mac path
 #endif
 
-QList<QSharedPointer<DroneClass>> DroneController::droneList;  // Define the static variable
+QList<QSharedPointer<DroneClass>> DroneController::droneList; // Define the static variable
 
 DroneController::DroneController(DBManager &db, QObject *parent)
-    : QObject(parent), dbManager(db) {
+    : QObject(parent)
+    , dbManager(db)
+{
     // function loads all drones from the database on startup
     QList<QVariantMap> droneRecords = dbManager.fetchAllDrones();
     for (const QVariantMap &record : droneRecords) {
@@ -43,18 +45,20 @@ DroneController::DroneController(DBManager &db, QObject *parent)
 }
 
 // method so QML can retrieve the drone list.
-QVariantList DroneController::getDroneList() const {
+QVariantList DroneController::getDroneList() const
+{
     QVariantList list;
     for (const QSharedPointer<DroneClass> &drone : droneList) {
         QVariantMap droneMap;
         // these method calls have to match our DroneClass interface
         droneMap["name"] = drone->getName();
-        droneMap["role"] = drone->getRole(); // <-- we been using "drone type" in UI and everything but its called drone role in droneclass.h lul
+        droneMap["role"]
+            = drone->getRole(); // <-- we been using "drone type" in UI and everything but its called drone role in droneclass.h lul
         droneMap["xbeeId"] = drone->getXbeeID();
         droneMap["xbeeAddress"] = drone->getXbeeAddress();
         // Adds placeholder values for status and battery and leave other fields blank
         droneMap["status"] = "Not Connected"; // or "Pending" or another placeholder
-        droneMap["battery"] = "NA"; // static placeholder battery percent
+        droneMap["battery"] = "NA";           // static placeholder battery percent
 
         // uncomment to leave blank (not needed)
         /*droneMap["lattitude"] = ""; // leave as blank or add a default value
@@ -67,7 +71,8 @@ QVariantList DroneController::getDroneList() const {
     return list;
 }
 
-DroneController::~DroneController() {
+DroneController::~DroneController()
+{
     // Cleanup code if needed
     if (xbeeDataTimer.isActive()) {
         xbeeDataTimer.stop();
@@ -78,7 +83,8 @@ DroneController::~DroneController() {
 }
 
 // Get the correct file path to check
-QString DroneController::getDataFilePath() {
+QString DroneController::getDataFilePath()
+{
     // On Windows, always check user's TEMP folder first
 #ifdef _WIN32
     QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
@@ -127,9 +133,14 @@ QString DroneController::getDataFilePath() {
  *
  * Viewable Drone
  */
-void DroneController::saveDrone(const QString &input_name, const QString &input_role, const QString &input_xbeeID, const QString &input_xbeeAddress) {
+void DroneController::saveDrone(const QString &input_name,
+                                const QString &input_role,
+                                const QString &input_xbeeID,
+                                const QString &input_xbeeAddress)
+{
     // Add debug output to see what's being passed
-    qDebug() << "saveDrone called with:" << input_name << input_role << input_xbeeID << input_xbeeAddress;
+    qDebug() << "saveDrone called with:" << input_name << input_role << input_xbeeID
+             << input_xbeeAddress;
 
     if (input_name.isEmpty()) {
         qWarning() << "Missing required name field!";
@@ -157,7 +168,10 @@ void DroneController::saveDrone(const QString &input_name, const QString &input_
         qDebug() << "Drone created in DB successfully with ID:" << newDroneId;
 
         // Add to the in-memory list
-        droneList.push_back(QSharedPointer<DroneClass>::create(input_name, input_role, input_xbeeID, input_xbeeAddress));
+        droneList.push_back(QSharedPointer<DroneClass>::create(input_name,
+                                                               input_role,
+                                                               input_xbeeID,
+                                                               input_xbeeAddress));
 
         qDebug() << "About to emit dronesChanged signal after adding drone";
         emit dronesChanged();
@@ -167,7 +181,12 @@ void DroneController::saveDrone(const QString &input_name, const QString &input_
     }
 }
 
-void DroneController::updateDrone(const QString &oldXbeeId, const QString &name, const QString &role, const QString &xbeeId, const QString &xbeeAddress) {
+void DroneController::updateDrone(const QString &oldXbeeId,
+                                  const QString &name,
+                                  const QString &role,
+                                  const QString &xbeeId,
+                                  const QString &xbeeAddress)
+{
     // Find the drone in our list by its xbeeID (im assuming is unique)
     for (int i = 0; i < droneList.size(); i++) {
         if (droneList[i]->getXbeeID() == oldXbeeId) {
@@ -193,7 +212,8 @@ void DroneController::updateDrone(const QString &oldXbeeId, const QString &name,
     }
 }
 
-void DroneController::deleteDrone(const QString &input_xbeeId) {
+void DroneController::deleteDrone(const QString &input_xbeeId)
+{
     if (input_xbeeId.isEmpty()) {
         qWarning() << "Drone Controller: xbeeId not passed by UI.";
         return;
@@ -202,8 +222,8 @@ void DroneController::deleteDrone(const QString &input_xbeeId) {
     // Try to find and delete the drone from memory first
     bool found = false;
     for (int i = 0; i < droneList.size(); i++) {
-        if (droneList[i]->getXbeeID() == input_xbeeId ||
-            droneList[i]->getXbeeAddress() == input_xbeeId) {
+        if (droneList[i]->getXbeeID() == input_xbeeId
+            || droneList[i]->getXbeeAddress() == input_xbeeId) {
             droneList.removeAt(i);
             found = true;
             qDebug() << "Removed drone from memory with ID/address:" << input_xbeeId;
@@ -225,7 +245,8 @@ void DroneController::deleteDrone(const QString &input_xbeeId) {
 }
 
 // if we're being honest the slots being called by any function is in my head and i cant figure out if i need something rn
-void DroneController::deleteALlDrones_UI() {
+void DroneController::deleteALlDrones_UI()
+{
     if (dbManager.deleteAllDrones()) {
         droneList.clear(); // also delete drones in C++ memory
 
@@ -237,7 +258,8 @@ void DroneController::deleteALlDrones_UI() {
     }
 }
 
-bool DroneController::isSimulationMode() const {
+bool DroneController::isSimulationMode() const
+{
     QString configPath = getConfigFilePath();
     QFile configFile(configPath);
 
@@ -257,7 +279,8 @@ bool DroneController::isSimulationMode() const {
     return true;
 }
 
-QString DroneController::getConfigFilePath() const {
+QString DroneController::getConfigFilePath() const
+{
     QString configPath;
 
 #ifdef _WIN32
@@ -283,17 +306,19 @@ QString DroneController::getConfigFilePath() const {
 }
 
 // If want to query by name
-QSharedPointer<DroneClass> DroneController::getDroneByName(const QString &name) {
+QSharedPointer<DroneClass> DroneController::getDroneByName(const QString &name)
+{
     for (const auto &drone : droneList) {
         if (drone->getName() == name) {
             return drone;
         }
     }
-    return QSharedPointer<DroneClass>();  // Return null pointer if not found
+    return QSharedPointer<DroneClass>(); // Return null pointer if not found
 }
 
 // If want to query by address
-QSharedPointer<DroneClass> DroneController::getDroneByXbeeAddress(const QString &address) {
+QSharedPointer<DroneClass> DroneController::getDroneByXbeeAddress(const QString &address)
+{
     qDebug() << "Looking for drone with address:" << address;
 
     // First try exact address match
@@ -314,19 +339,20 @@ QSharedPointer<DroneClass> DroneController::getDroneByXbeeAddress(const QString 
 
     // Attempt a more flexible match (case insensitive, partial)
     for (const auto &drone : droneList) {
-        if (drone->getXbeeAddress().contains(address, Qt::CaseInsensitive) ||
-            address.contains(drone->getXbeeAddress(), Qt::CaseInsensitive)) {
+        if (drone->getXbeeAddress().contains(address, Qt::CaseInsensitive)
+            || address.contains(drone->getXbeeAddress(), Qt::CaseInsensitive)) {
             qDebug() << "Found drone by partial address match:" << drone->getName();
             return drone;
         }
     }
 
     qDebug() << "No drone found with address:" << address;
-    return QSharedPointer<DroneClass>();  // Return null pointer if not found
+    return QSharedPointer<DroneClass>(); // Return null pointer if not found
 }
 
 // Check if the data file exists
-bool DroneController::checkDataFileExists() {
+bool DroneController::checkDataFileExists()
+{
     QString filePath = getDataFilePath();
     QFile file(filePath);
     if (file.exists()) {
@@ -339,18 +365,20 @@ bool DroneController::checkDataFileExists() {
 }
 
 // Try to connect to the data file
-void DroneController::tryConnectToDataFile() {
+void DroneController::tryConnectToDataFile()
+{
     if (checkDataFileExists()) {
         qDebug() << "Successfully found XBee data file";
-        reconnectTimer.stop();  // Stop trying to reconnect
+        reconnectTimer.stop(); // Stop trying to reconnect
 
         // Start timer to check for XBee data
-        xbeeDataTimer.start(50);  // Check every 50ms
+        xbeeDataTimer.start(50); // Check every 50ms
         emit xbeeConnectionChanged(true);
     }
 }
 
-QString DroneController::getLatestXbeeData() {
+QString DroneController::getLatestXbeeData()
+{
     QString result;
     QString filePath = getDataFilePath();
     QFile file(filePath);
@@ -365,7 +393,8 @@ QString DroneController::getLatestXbeeData() {
     return result;
 }
 
-QVariantList DroneController::getDrones() const { // DOUBLE CHECK THIS BRANDON
+QVariantList DroneController::getDrones() const
+{ // DOUBLE CHECK THIS BRANDON
     QVariantList result;
 
     // Ensure the database is open
@@ -382,7 +411,7 @@ QVariantList DroneController::getDrones() const { // DOUBLE CHECK THIS BRANDON
             QVariantMap drone;
             drone["id"] = query.value(0).toInt();
             drone["name"] = query.value(1).toString();
-            drone["role"] = query.value(2).toString();  // Changed from "type" to "role"
+            drone["role"] = query.value(2).toString(); // Changed from "type" to "role"
             drone["xbeeId"] = query.value(3).toString();
             drone["xbeeAddress"] = query.value(4).toString();
             result.append(drone);
@@ -391,14 +420,14 @@ QVariantList DroneController::getDrones() const { // DOUBLE CHECK THIS BRANDON
 
         // Initialize droneList with database contents
         droneList.clear();
-        for (const QVariant& droneVar : result) {
+        for (const QVariant &droneVar : result) {
             QVariantMap droneMap = droneVar.toMap();
-            droneList.push_back(QSharedPointer<DroneClass>::create(
-                droneMap["name"].toString(),
-                droneMap["role"].toString(),  // Changed from "type" to "role"
-                droneMap["xbeeId"].toString(),
-                droneMap["xbeeAddress"].toString()
-                ));
+            droneList.push_back(
+                QSharedPointer<DroneClass>::create(droneMap["name"].toString(),
+                                                   droneMap["role"]
+                                                       .toString(), // Changed from "type" to "role"
+                                                   droneMap["xbeeId"].toString(),
+                                                   droneMap["xbeeAddress"].toString()));
         }
     } else {
         qWarning() << "Failed to fetch drones from database:" << query.lastError().text();
@@ -407,9 +436,11 @@ QVariantList DroneController::getDrones() const { // DOUBLE CHECK THIS BRANDON
     return result;
 }
 
-void DroneController::processXbeeData() {
+void DroneController::processXbeeData()
+{
     QString data = getLatestXbeeData();
-    if (data.isEmpty()) return;
+    if (data.isEmpty())
+        return;
 
     qDebug() << "Raw XBee data:" << data.left(100) << "..."; // Show first 100 chars
 
@@ -452,24 +483,26 @@ void DroneController::processXbeeData() {
             qDebug() << "Received data for unknown drone at address:" << address;
             qDebug() << "Available drones:";
             for (const auto &d : droneList) {
-                qDebug() << "  -" << d->getName() << ":" << d->getXbeeID() << "/" << d->getXbeeAddress();
+                qDebug() << "  -" << d->getName() << ":" << d->getXbeeID() << "/"
+                         << d->getXbeeAddress();
             }
         }
     }
 }
 
 // Start monitoring for XBee data
-void DroneController::startXbeeMonitoring() {
+void DroneController::startXbeeMonitoring()
+{
     // Try to connect immediately
     if (checkDataFileExists()) {
         qDebug() << "Successfully found XBee data file";
-        xbeeDataTimer.start(1000);  // Check every 1000ms
+        xbeeDataTimer.start(1000); // Check every 1000ms
         emit xbeeConnectionChanged(true);
     } else {
         qDebug() << "Waiting for XBee data file to be created...";
         emit xbeeConnectionChanged(false);
 
         // Start reconnect timer
-        reconnectTimer.start(1000);  // Try every second
+        reconnectTimer.start(1000); // Try every second
     }
 }
