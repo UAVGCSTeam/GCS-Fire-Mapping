@@ -7,6 +7,8 @@
 #include <QVector>
 #include <ctime>
 #include <unordered_map>
+#include <unordered_set>
+#include <queue>
 #include <functional>
 #include "droneclass.h"
 #include "markersmodel.h"
@@ -31,6 +33,12 @@ struct QPairHash{
         return h1 ^ (h2 << 1);
     }
 };
+struct QPairEqual {
+    bool operator()(const std::pair<double, double>& a, const std::pair<double, double>& b) const {
+        constexpr double epsilon = 1e-6;
+        return std::fabs(a.first - b.first) < epsilon && std::fabs(a.second - b.second) < epsilon;
+    }
+};
 class MapController : public QObject
 {
     Q_OBJECT
@@ -39,6 +47,7 @@ public:
     explicit MapController(QObject *parent = nullptr);
     // Q_INVOKABLE void debugPrintDrones() const;
     Q_INVOKABLE void createDrone(const QString &input_name);
+    Q_INVOKABLE void mapFillScan();
 
 public slots:
     void setCenterPosition(const QVariant &lat, const QVariant &lon);
@@ -76,7 +85,7 @@ private:
     //data structures for fire markers and hit deconfliction
     MarkersModel* m_markersModel;
     MarkersModel* m_droneMarkersModel;
-    std::unordered_map<QPair<double,double>,int,QPairHash> markerHits;
+    std::unordered_map<QPair<double,double>,int,QPairHash> m_markerHits;
     int m_vis = 3;
 
     void updateCenter(const QPair<double, double> &center);
@@ -86,7 +95,7 @@ private:
     QTimer* m_droneTimer;
     double m_angle;
     int state = 0;
-    MarkerClass* markerArray[100] = {};
+    //MarkerClass* markerArray[100] = {};
 };
 
 #endif // MAPCONTROLLER_H

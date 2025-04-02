@@ -89,39 +89,6 @@ Item
                         radius: 2.53
                         color: 'red'
                     }
-                    //gradient attempt, needs massive optimization
-                    // MapQuickItem {
-                    //     id: gradientItem
-                    //     visible: visibility
-                    //     coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
-                    //     anchorPoint.x: canvas.width / 2
-                    //     anchorPoint.y: canvas.height / 2
-                    //     sourceItem: Canvas {
-                    //         id: canvas
-                    //         property real baseSize: 20
-                    //         property real baseZoom: 18
-                    //         property real scaleFactor: Math.pow(2, mapview.zoomLevel - baseZoom)
-                    //         width: baseSize * scaleFactor
-                    //         height: baseSize * scaleFactor
-                    //         onPaint: {
-                    //             var ctx = getContext("2d");
-                    //             ctx.clearRect(0, 0, width, height);
-                    //             var grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
-                    //             grad.addColorStop(0, "red");
-                    //             grad.addColorStop(1, "transparent");
-                    //             ctx.fillStyle = grad;
-                    //             ctx.fillRect(0, 0, width, height);
-                    //         }
-                    //         onWidthChanged: requestPaint()
-                    //         onHeightChanged: requestPaint()
-                    //         Connections {
-                    //             target: mapview
-                    //             function onZoomLevelChanged(){
-                    //                 canvas.requestPaint()
-                    //             }
-                    //         }
-                    //     }
-                    // }
                 }
                 DelegateChoice{
                     id: smokeMarkerDelegate
