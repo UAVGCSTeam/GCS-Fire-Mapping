@@ -1,4 +1,6 @@
 #include "mapcontroller.h"
+#include <unordered_set>
+#include <queue>
 #include <QDebug>
 
 /*
@@ -47,13 +49,6 @@ MapController::MapController(QObject *parent)
             addMarker(temp,true);
         }
     }
-    // lat = 34.0585;
-    // lon =  -117.821;
-    // for(int i = 0; i < 10; i++){
-    //     for(int j = 0; j < 10; j++){
-    //         markerArray[i+j*10] = new MarkerClass("fireMarker",lat-inc*j,lon+inc*i,this);
-    //     }
-    // }
     //for time to flow in demo
     connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
     m_droneTimer->start(100);
@@ -144,7 +139,7 @@ void MapController::addMarker(MarkerClass* marker, bool hitDeconflictEnabled)
             type = 1;
         marker->setVisibility(type & m_vis);
         if(hitDeconflictEnabled){
-            //round coords to be divisible by 0.000035
+            // Round coords to be divisible by 0.000035
             roundCoords(marker);
             //ignore repeat hits
             QPair<double,double> temp(marker->getLatitude(),marker->getLongitude());
@@ -175,7 +170,7 @@ void MapController::removeMarker(MarkerClass* marker, bool hitDeconflictRecover)
 
     }
 }
-//need removeDrone function
+// need removeDrone function!
 void MapController::updateMarker(MarkerClass* marker, const double &lat, const double &lon){
     if(marker){
         if(marker->getType() == "drone")
@@ -203,124 +198,136 @@ void MapController::toggleTypeVisibility(const QString &type, bool vis){
         }
     }
 }
-
-//Fills map holes encircled with fire
-void MapController::mapFillScan(){
-
+// Fills map holes encircled with fire
+void MapController::mapFillScan() {
     if (m_markerHits.empty()) return;
 
     const double delta = 0.000035;
-
-    // --- Step 1: Convert to Integer Grid Coordinates & Find Bounds ---
-    std::unordered_set<QPair<double,double>,QPairHash,QPairEqual> presentGridPoints;
     int min_ix = std::numeric_limits<int>::max();
     int max_ix = std::numeric_limits<int>::min();
     int min_iy = std::numeric_limits<int>::max();
     int max_iy = std::numeric_limits<int>::min();
 
-    //input fireHits into set
+    // Convert double coordinates to int
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> fireGridPoints;
     for (const auto& p : m_markerHits) {
-        //check for fire
-        if(p.second){
-            // converting to ints to make comparisons easier
-            int ix = static_cast<int>(std::round(p.first.first / delta));
-            int iy = static_cast<int>(std::round(p.first.second / delta));
-            presentGridPoints.insert({ix, iy});
+        int ix = static_cast<int>(std::round(p.first.first / delta));
+        int iy = static_cast<int>(std::round(p.first.second / delta));
+        fireGridPoints.insert({ix, iy});
 
-            if (ix < min_ix) min_ix = ix;
-            if (ix > max_ix) max_ix = ix;
-            if (iy < min_iy) min_iy = iy;
-            if (iy > max_iy) max_iy = iy;
+        if (ix < min_ix) min_ix = ix;
+        if (ix > max_ix) max_ix = ix;
+        if (iy < min_iy) min_iy = iy;
+        if (iy > max_iy) max_iy = iy;
+    }
+    // No fires
+    if (min_ix > max_ix || min_iy > max_iy) return;
+
+    // Check each direction next to fire markers and add missing points into potentials
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> potentialPoints;
+    int dx[] = {0, 0, 1, -1};
+    int dy[] = {1, -1, 0, 0};
+    for (const auto& firePt : fireGridPoints) {
+        for (int i = 0; i < 4; ++i) {
+            QPair<int, int> neighbor = {firePt.first + dx[i], firePt.second + dy[i]};
+            if (fireGridPoints.find(neighbor) == fireGridPoints.end()) {
+                // Check boundaries for efficiency
+                if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
+                    neighbor.second >= min_iy && neighbor.second <= max_iy)
+                {
+                    potentialPoints.insert(neighbor);
+                }
+            }
         }
     }
+    // Nothing to fill
+    if (potentialPoints.empty()) return;
 
-    // Define grid boundaries with a margin of 1 cell
+    // Flood fill BFS
+    std::queue<QPair<int, int>> outer_q;
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> visited;
+
     int grid_min_ix = min_ix - 1;
     int grid_max_ix = max_ix + 1;
     int grid_min_iy = min_iy - 1;
     int grid_max_iy = max_iy + 1;
 
-    // --- Step 2: Flood Fill from the Boundary (BFS) ---
-    std::queue<QPair<int,int>> q;
-    std::unordered_set<QPair<double,double>,QPairHash,QPairEqual> visitedMissingPoints; // Stores missing points reachable from outside
+    auto tryAddToOuterQueue = [&](int ix, int iy) {
+        QPair<int, int> point = {ix, iy};
+        if (fireGridPoints.find(point) == fireGridPoints.end() &&
+            visited.find(point) == visited.end()) {
+            visited.insert(point);
+            outer_q.push(point);
+        }
+    };
 
-    // Add all boundary points to the queue if they are MISSING
     for (int ix = grid_min_ix; ix <= grid_max_ix; ++ix) {
-        QPair<int,int> top = {ix, grid_max_iy};
-        QPair<int,int> bottom = {ix, grid_min_iy};
-        if (presentGridPoints.find(top) == presentGridPoints.end()) { // If missing
-            if (visitedMissingPoints.find(top) == visitedMissingPoints.end()) {
-                q.push(top);
-                visitedMissingPoints.insert(top);
-            }
-        }
-        if (presentGridPoints.find(bottom) == presentGridPoints.end()) { // If missing
-            if (visitedMissingPoints.find(bottom) == visitedMissingPoints.end()) {
-                q.push(bottom);
-                visitedMissingPoints.insert(bottom);
-            }
-        }
+        tryAddToOuterQueue(ix, grid_max_iy);
+        tryAddToOuterQueue(ix, grid_min_iy);
     }
-    for (int iy = grid_min_iy + 1; iy < grid_max_iy; ++iy) { // Avoid corners twice
-        QPair<int,int> left = {grid_min_ix, iy};
-        QPair<int,int> right = {grid_max_ix, iy};
-        if (presentGridPoints.find(left) == presentGridPoints.end()) { // If missing
-            if (visitedMissingPoints.find(left) == visitedMissingPoints.end()) {
-                q.push(left);
-                visitedMissingPoints.insert(left);
-            }
-        }
-        if (presentGridPoints.find(right) == presentGridPoints.end()) { // If missing
-            if (visitedMissingPoints.find(right) == visitedMissingPoints.end()) {
-                q.push(right);
-                visitedMissingPoints.insert(right);
-            }
-        }
+    for (int iy = grid_min_iy + 1; iy < grid_max_iy; ++iy) {
+        tryAddToOuterQueue(grid_min_ix, iy);
+        tryAddToOuterQueue(grid_max_ix, iy);
     }
 
-
-    // BFS execution
-    int dx[] = {0, 0, 1, -1};
-    int dy[] = {1, -1, 0, 0};
-
-    while (!q.empty()) {
-        QPair<int,int> current = q.front();
-        q.pop();
+    // BFS for 'shoreline' empty coordinates
+    while (!outer_q.empty()) {
+        QPair<int, int> current = outer_q.front();
+        outer_q.pop();
 
         for (int i = 0; i < 4; ++i) {
-            QPair<int,int> neighbor = {current.first + dx[i], current.second + dy[i]};
+            QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
 
-            // Stay within grid bounds
             if (neighbor.first < grid_min_ix || neighbor.first > grid_max_ix ||
                 neighbor.second < grid_min_iy || neighbor.second > grid_max_iy) {
                 continue;
             }
 
-            // If the neighbor is MISSING and NOT VISITED yet
-            if (presentGridPoints.find(neighbor) == presentGridPoints.end() &&
-                visitedMissingPoints.find(neighbor) == visitedMissingPoints.end())
+            if (fireGridPoints.find(neighbor) == fireGridPoints.end() &&
+                visited.find(neighbor) == visited.end())
             {
-                visitedMissingPoints.insert(neighbor);
-                q.push(neighbor);
+                visited.insert(neighbor);
+                outer_q.push(neighbor);
             }
         }
     }
 
-    // --- Step 3: Identify Hole Points ---
-    // Iterate through all possible grid points *inside* the boundary margin
-    for (int ix = min_ix; ix <= max_ix; ++ix) {
-        for (int iy = min_iy; iy <= max_iy; ++iy) {
-            QPair<int,int> currentInt = {ix, iy};
+    // BFS for remaining coordinates
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> filled;
 
-            // If a point is MISSING from input AND was NOT visited by the boundary BFS
-            if (presentGridPoints.find(currentInt) == presentGridPoints.end() &&
-                visitedMissingPoints.find(currentInt) == visitedMissingPoints.end())
-            {
-                // This is a hole point. Convert back to double coordinates.
-                double lat = static_cast<double>(ix) * delta;
-                double lon = static_cast<double>(iy) * delta;
-                MarkerClass* temp= new MarkerClass("fireMarker",lat,lon,parent());
-                addMarker(temp);
+    for (const auto& candidate : potentialPoints) {
+
+        if (filled.find(candidate) == filled.end() &&
+            filled.find(candidate) == filled.end())
+        {
+            // Begin Fill.
+            std::queue<QPair<int, int>> fill_q;
+            fill_q.push(candidate);
+
+            while (!fill_q.empty()) {
+                QPair<int, int> current = fill_q.front();
+                fill_q.pop();
+
+                for (int i = 0; i < 4; ++i) {
+                    QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
+
+                    // Check if inbounds
+                    // Check if in fire grid
+                    // Check if reachable
+                    // Check if filled
+                    if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
+                        neighbor.second >= min_iy && neighbor.second <= max_iy &&
+                        fireGridPoints.find(neighbor) == fireGridPoints.end() &&
+                        visited.find(neighbor) == visited.end() &&
+                        filled.find(neighbor) == filled.end())
+                    {
+                        filled.insert(neighbor);
+                        double lat = static_cast<double>(neighbor.first) * delta;
+                        double lon = static_cast<double>(neighbor.second) * delta;
+                        addMarker(new MarkerClass("fireMarker", lat, lon, parent()));
+                        fill_q.push(neighbor);
+                    }
+                }
             }
         }
     }
@@ -328,28 +335,6 @@ void MapController::mapFillScan(){
 
 void MapController::droneDemo(){
     if(m_droneMarkersModel->size() == 0 || m_drones.size() == 0) return;
-
-    // if(state == 0){
-    //     for(int i = 0; i < 100; i++){
-    //         addMarker(markerArray[i]);
-    //     }
-    //     state = 1;
-    // }else if(state == 11){
-    //     for(int i = 0; i < 100; i++){
-    //         removeMarker(markerArray[i]);
-    //     }
-    //     double lat = 34.0585;
-    //     double lon =  -117.821;
-    //     double inc = 0.000035;
-    //     for(int i = 0; i < 10; i++){
-    //         for(int j = 0; j < 10; j++){
-    //             markerArray[i+j*10] = new MarkerClass("fireMarker",lat-inc*j,lon+inc*i,this);
-    //         }
-    //     }
-    //     state = -5;
-    // }else{
-    //     state++;
-    // }
 
     // Define the center and radius for the circular path.
     const double centerLat = 34.05917;
@@ -378,7 +363,7 @@ void MapController::droneDemo(){
     updateDrone(m_drones[1],newLat2,newLon2);
     updateDrone(m_drones[2],newLat3,newLon3);
     state++;
-    if(state == 100){
+    if(state == 50){
         mapFillScan();
     }
 

@@ -7,8 +7,6 @@
 #include <QVector>
 #include <ctime>
 #include <unordered_map>
-#include <unordered_set>
-#include <queue>
 #include <functional>
 #include "droneclass.h"
 #include "markersmodel.h"
@@ -33,10 +31,23 @@ struct QPairHash{
         return h1 ^ (h2 << 1);
     }
 };
+struct IntPairHash {
+    std::size_t operator()(const QPair<int, int>& p) const {
+        auto h1 = std::hash<int>{}(p.first);
+        auto h2 = std::hash<int>{}(p.second);
+        return h1 ^ (h2 << 1);
+    }
+};
 struct QPairEqual {
     bool operator()(const std::pair<double, double>& a, const std::pair<double, double>& b) const {
         constexpr double epsilon = 1e-6;
         return std::fabs(a.first - b.first) < epsilon && std::fabs(a.second - b.second) < epsilon;
+    }
+};
+
+struct IntPairEqual {
+    bool operator()(const QPair<int, int>& lhs, const QPair<int, int>& rhs) const {
+        return lhs.first == rhs.first && lhs.second == rhs.second;
     }
 };
 class MapController : public QObject
