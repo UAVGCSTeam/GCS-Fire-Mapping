@@ -141,16 +141,12 @@ Window {
             text: qsTr("Fire Markers")
             checkable: true
             checked: true
-            onTriggered:{
-            }
           }
           MenuItem {
             id: smokeMarkersItem
             text: qsTr("Smoke Markers")
             checkable: true
             checked: true
-            onTriggered:{
-            }
           }
         }
     }
