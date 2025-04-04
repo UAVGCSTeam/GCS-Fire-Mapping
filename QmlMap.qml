@@ -68,6 +68,33 @@ Item
             grabPermissions: PointerHandler.TakeOverForbidden
             onTranslationChanged: (delta) => { mapview.pan(-delta.x, -delta.y); }
         }
+        MapItemView{
+
+                    model: mapController.smokeMap()
+                    opacity: 0.25
+                    layer.enabled: true
+                    visible: smokeMarkersItem.checked
+                    delegate: MapCircle{
+                        border.width: 0
+                        center: QtPositioning.coordinate(model.latitude, model.longitude)
+                        radius: 2.53
+                        color: 'black'
+                    }
+        }
+        MapItemView{
+
+                    model: mapController.fireMap()
+                    opacity: 0.3
+                    layer.enabled: true
+                    visible: fireMarkersItem.checked
+                    delegate: MapCircle{
+                        border.width: 0
+                        center: QtPositioning.coordinate(model.latitude, model.longitude)
+                        radius: 2.53
+                        color: 'red'
+                    }
+        }
+
         MapItemView
         {
             // Create list for all pins (Will be used to track drones later with some optimization)

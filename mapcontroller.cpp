@@ -1,4 +1,6 @@
 #include "mapcontroller.h"
+#include <unordered_set>
+#include <queue>
 #include <QDebug>
 
 /*
@@ -10,7 +12,12 @@
 // Define constructor for MapController class
 MapController::MapController(QObject *parent)
     // Defines all variables within our map
-    : QObject(parent), m_currentMapType(0), m_supportedMapTypesCount(3)
+    : QObject(parent)
+    , m_currentMapType(0)
+    , m_supportedMapTypesCount(3)
+    , m_fireMap(new CoordinateList(this))
+    , m_smokeMap(new CoordinateList(this))
+    , m_droneTimer(new QTimer(this))
 {
 
     // Populate with dummy drone objects for testing icon markers using setLattitude and setLongitude
@@ -43,6 +50,27 @@ MapController::MapController(QObject *parent)
     drone5->setLattitude(34.0119);
     drone5->setLongitude(-118.4916);
     addDrone(drone5);
+
+    double lat = 34.0591;
+    double lon =  -117.82047;
+    double inc = 0.000035;
+    for(int i = 0; i < 32; i++){
+        for(int j = 0; j < 32; j++){
+            if(i < 15 || i > 20 || j < 15 || j > 20){
+                addMarker(QPair<double,double>(lat-inc*j,lon+inc*i),1);
+            }
+        }
+    }
+    lat = 34.06;
+    lon =  -117.821;
+    for(int i = 0; i < 32; i++){
+        for(int j = 0; j < 32; j++){
+            addMarker(QPair<double,double>(lat-inc*j,lon+inc*i),0);
+        }
+    }
+    //for time to flow in demo
+    connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
+    m_droneTimer->start(100);
 }
 
 void MapController::addDrone(DroneClass* drone)
@@ -113,6 +141,166 @@ void MapController::addMarker(const QPair<double, double> &position)
     // Stores markers on cpp side
     m_markers.append(position);
     emit locationMarked(QVariant(position.first), QVariant(position.second));
+}
+
+QPair<double,double> MapController::roundCoordinates(const QPair<double,double> &c){
+    return QPair<double,double>(round(c.first/delta) * delta,round(c.second/delta) * delta);
+}
+void MapController::addMarker(const QPair<double, double> &c, int type){
+    QPair<double,double> p = roundCoordinates(c);
+    if(type == 1){
+        m_fireMap->insert(p);
+    }else if(!(m_fireMap->contains(p))){
+        m_smokeMap->insert(p);
+    }
+}
+void MapController::removeMarker(const QPair<double, double> &c, int type){
+    QPair<double,double> p = roundCoordinates(c);
+    if(type == 1){
+        m_fireMap->remove(p);
+    }else{
+        m_smokeMap->remove(p);
+    }
+}
+
+// Fills map holes encircled with fire
+void MapController::mapFillScan() {
+
+    if (m_fireMap->size() == 0) return;
+    int min_ix = std::numeric_limits<int>::max();
+    int max_ix = std::numeric_limits<int>::min();
+    int min_iy = std::numeric_limits<int>::max();
+    int max_iy = std::numeric_limits<int>::min();
+
+    // Convert double coordinates to int
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> fireGridPoints;
+    for(int i = 0; i < m_fireMap->size(); i++){
+        int ix = static_cast<int>(std::round(m_fireMap->at(i).first/ delta));
+        int iy = static_cast<int>(std::round(m_fireMap->at(i).second/ delta));
+        fireGridPoints.insert({ix, iy});
+
+        if (ix < min_ix) min_ix = ix;
+        if (ix > max_ix) max_ix = ix;
+        if (iy < min_iy) min_iy = iy;
+        if (iy > max_iy) max_iy = iy;
+    }
+    // No fires
+    if (min_ix > max_ix || min_iy > max_iy) return;
+
+    // Check each direction next to fire markers and add missing points into potentials
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> potentialPoints;
+    int dx[] = {0, 0, 1, -1};
+    int dy[] = {1, -1, 0, 0};
+    for (const auto& firePt : fireGridPoints) {
+        for (int i = 0; i < 4; ++i) {
+            QPair<int, int> neighbor = {firePt.first + dx[i], firePt.second + dy[i]};
+            if (fireGridPoints.find(neighbor) == fireGridPoints.end()) {
+                // Check boundaries for efficiency
+                if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
+                    neighbor.second >= min_iy && neighbor.second <= max_iy)
+                {
+                    potentialPoints.insert(neighbor);
+                }
+            }
+        }
+    }
+    // Nothing to fill
+    if (potentialPoints.empty()) return;
+
+    // Flood fill BFS
+    std::queue<QPair<int, int>> outer_q;
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> visited;
+
+    int grid_min_ix = min_ix - 1;
+    int grid_max_ix = max_ix + 1;
+    int grid_min_iy = min_iy - 1;
+    int grid_max_iy = max_iy + 1;
+
+    auto tryAddToOuterQueue = [&](int ix, int iy) {
+        QPair<int, int> point = {ix, iy};
+        if (fireGridPoints.find(point) == fireGridPoints.end() &&
+            visited.find(point) == visited.end()) {
+            visited.insert(point);
+            outer_q.push(point);
+        }
+    };
+
+    for (int ix = grid_min_ix; ix <= grid_max_ix; ++ix) {
+        tryAddToOuterQueue(ix, grid_max_iy);
+        tryAddToOuterQueue(ix, grid_min_iy);
+    }
+    for (int iy = grid_min_iy + 1; iy < grid_max_iy; ++iy) {
+        tryAddToOuterQueue(grid_min_ix, iy);
+        tryAddToOuterQueue(grid_max_ix, iy);
+    }
+
+    // BFS for 'shoreline' empty coordinates
+    while (!outer_q.empty()) {
+        QPair<int, int> current = outer_q.front();
+        outer_q.pop();
+
+        for (int i = 0; i < 4; ++i) {
+            QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
+
+            if (neighbor.first < grid_min_ix || neighbor.first > grid_max_ix ||
+                neighbor.second < grid_min_iy || neighbor.second > grid_max_iy) {
+                continue;
+            }
+
+            if (fireGridPoints.find(neighbor) == fireGridPoints.end() &&
+                visited.find(neighbor) == visited.end())
+            {
+                visited.insert(neighbor);
+                outer_q.push(neighbor);
+            }
+        }
+    }
+
+    // BFS for remaining coordinates
+    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> filled;
+
+    for (const auto& candidate : potentialPoints) {
+
+        if (filled.find(candidate) == filled.end() &&
+            filled.find(candidate) == filled.end())
+        {
+            // Begin Fill.
+            std::queue<QPair<int, int>> fill_q;
+            fill_q.push(candidate);
+
+            while (!fill_q.empty()) {
+                QPair<int, int> current = fill_q.front();
+                fill_q.pop();
+
+                for (int i = 0; i < 4; ++i) {
+                    QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
+
+                    // Check if inbounds
+                    // Check if in fire grid
+                    // Check if reachable
+                    // Check if filled
+                    if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
+                        neighbor.second >= min_iy && neighbor.second <= max_iy &&
+                        fireGridPoints.find(neighbor) == fireGridPoints.end() &&
+                        visited.find(neighbor) == visited.end() &&
+                        filled.find(neighbor) == filled.end())
+                    {
+                        filled.insert(neighbor);
+                        QPair<double,double> coord(static_cast<double>(neighbor.first) * delta,static_cast<double>(neighbor.second) * delta);
+                        m_fireMap->insert(coord);
+                        fill_q.push(neighbor);
+                    }
+                }
+            }
+        }
+    }
+}
+void MapController::droneDemo(){
+    state++;
+    if(state == 25){
+        qDebug() << "beginning scan";
+        mapFillScan();
+    }
 }
 
 //Prints all Dummy Drone Objects
