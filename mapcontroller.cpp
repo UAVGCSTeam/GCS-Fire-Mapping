@@ -1,5 +1,5 @@
 #include "mapcontroller.h"
-#include <unordered_set>
+#include <QSet>
 #include <queue>
 #include <QDebug>
 
@@ -17,7 +17,7 @@ MapController::MapController(QObject *parent)
     , m_supportedMapTypesCount(3)
     , m_fireMap(new CoordinateList(this))
     , m_smokeMap(new CoordinateList(this))
-    , m_droneTimer(new QTimer(this))
+    , m_droneTimer(new QTimer(this)) // for demo
 {
 
     // Populate with dummy drone objects for testing icon markers using setLattitude and setLongitude
@@ -173,7 +173,7 @@ void MapController::mapFillScan() {
     int max_iy = std::numeric_limits<int>::min();
 
     // Convert double coordinates to int
-    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> fireGridPoints;
+    QSet<QPair<int,int>> fireGridPoints;
     for(int i = 0; i < m_fireMap->size(); i++){
         int ix = static_cast<int>(std::round(m_fireMap->at(i).first/ delta));
         int iy = static_cast<int>(std::round(m_fireMap->at(i).second/ delta));
@@ -188,7 +188,7 @@ void MapController::mapFillScan() {
     if (min_ix > max_ix || min_iy > max_iy) return;
 
     // Check each direction next to fire markers and add missing points into potentials
-    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> potentialPoints;
+    QSet<QPair<int, int>> potentialPoints;
     int dx[] = {0, 0, 1, -1};
     int dy[] = {1, -1, 0, 0};
     for (const auto& firePt : fireGridPoints) {
@@ -209,7 +209,7 @@ void MapController::mapFillScan() {
 
     // Flood fill BFS
     std::queue<QPair<int, int>> outer_q;
-    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> visited;
+    QSet<QPair<int, int>> visited;
 
     int grid_min_ix = min_ix - 1;
     int grid_max_ix = max_ix + 1;
@@ -224,7 +224,6 @@ void MapController::mapFillScan() {
             outer_q.push(point);
         }
     };
-
     for (int ix = grid_min_ix; ix <= grid_max_ix; ++ix) {
         tryAddToOuterQueue(ix, grid_max_iy);
         tryAddToOuterQueue(ix, grid_min_iy);
@@ -257,7 +256,7 @@ void MapController::mapFillScan() {
     }
 
     // BFS for remaining coordinates
-    std::unordered_set<QPair<int, int>, IntPairHash, IntPairEqual> filled;
+    QSet<QPair<int, int>> filled;
 
     for (const auto& candidate : potentialPoints) {
 

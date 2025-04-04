@@ -21,18 +21,6 @@
  * Ensures separation of different functions.
  * Keeps logic in cpp and QML purely for UI.
 */
-struct IntPairHash {
-    std::size_t operator()(const QPair<int, int>& p) const {
-        auto h1 = std::hash<int>{}(p.first);
-        auto h2 = std::hash<int>{}(p.second);
-        return h1 ^ (h2 << 1);
-    }
-};
-struct IntPairEqual {
-    bool operator()(const QPair<int, int>& lhs, const QPair<int, int>& rhs) const {
-        return lhs.first == rhs.first && lhs.second == rhs.second;
-    }
-};
 
 class MapController : public QObject
 {
