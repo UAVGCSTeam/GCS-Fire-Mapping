@@ -35,6 +35,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         setup_and_run_xbee.py
 
         coordinatelist.h
+        coordinatelist.cpp
 
     )
 # Define target properties for Android with Qt 6 as:

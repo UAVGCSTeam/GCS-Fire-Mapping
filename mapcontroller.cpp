@@ -57,7 +57,7 @@ MapController::MapController(QObject *parent)
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
             if(i < 15 || i > 20 || j < 15 || j > 20){
-                addMarker(QPair<double,double>(lat-inc*j,lon+inc*i),1);
+                addMarker({lat-inc*j,lon+inc*i},1);
             }
         }
     }
@@ -65,7 +65,7 @@ MapController::MapController(QObject *parent)
     lon =  -117.821;
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
-            addMarker(QPair<double,double>(lat-inc*j,lon+inc*i),0);
+            addMarker({lat-inc*j,lon+inc*i},0);
         }
     }
     //for time to flow in demo
@@ -299,6 +299,16 @@ void MapController::droneDemo(){
     if(state == 25){
         qDebug() << "beginning scan";
         mapFillScan();
+    }
+    if(state == 50){
+        double lat = 34.0591;
+        double lon =  -117.82047;
+        for(int i = 15; i < 20; i++){
+            for(int j = 15; j < 20; j++){
+                removeMarker({lat-delta*i,lon+delta*j},1);
+            }
+        }
+        state = 0;
     }
 }
 
