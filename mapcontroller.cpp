@@ -163,134 +163,104 @@ void MapController::removeMarker(const QPair<double, double> &c, int type){
         m_smokeMap->remove(p);
     }
 }
-
-// Fills map holes encircled with fire
 void MapController::mapFillScan() {
 
-    if (m_fireMap->size() == 0) return;
+    if (m_fireMap->size() == 0) {
+        return;
+    }
+
     int min_ix = std::numeric_limits<int>::max();
     int max_ix = std::numeric_limits<int>::min();
     int min_iy = std::numeric_limits<int>::max();
     int max_iy = std::numeric_limits<int>::min();
 
-    // Convert double coordinates to int and find boundary
-    QSet<QPair<int,int>> fireGridPoints;
-    for(int i = 0; i < m_fireMap->size(); i++){
-        int ix = static_cast<int>(std::round(m_fireMap->at(i).first/ delta));
-        int iy = static_cast<int>(std::round(m_fireMap->at(i).second/ delta));
+    // Convert double coordinates to int grid points and find boundary
+    QSet<QPair<int, int>> fireGridPoints;
+    for (int i = 0; i < m_fireMap->size(); i++) {
+        int ix = static_cast<int>(std::round(m_fireMap->at(i).first / delta));
+        int iy = static_cast<int>(std::round(m_fireMap->at(i).second / delta));
         fireGridPoints.insert({ix, iy});
-
         if (ix < min_ix) min_ix = ix;
         if (ix > max_ix) max_ix = ix;
         if (iy < min_iy) min_iy = iy;
         if (iy > max_iy) max_iy = iy;
     }
+
     // No fires
-    if (min_ix > max_ix || min_iy > max_iy) return;
-
-    // Check each direction next to fire markers and add missing points into potentials
-    QSet<QPair<int, int>> potentialPoints;
-    int dx[] = {0, 0, 1, -1};
-    int dy[] = {1, -1, 0, 0};
-    for (const auto& firePt : fireGridPoints) {
-        for (int i = 0; i < 4; ++i) {
-            QPair<int, int> neighbor = {firePt.first + dx[i], firePt.second + dy[i]};
-            if (fireGridPoints.find(neighbor) == fireGridPoints.end()) {
-                // Check boundaries for efficiency
-                if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
-                    neighbor.second >= min_iy && neighbor.second <= max_iy)
-                {
-                    potentialPoints.insert(neighbor);
-                }
-            }
-        }
+    if (min_ix > max_ix || min_iy > max_iy) {
+        return;
     }
-    // Nothing to fill
-    if (potentialPoints.empty()) return;
 
-    // Flood fill BFS
-    std::queue<QPair<int, int>> outer_q;
-    QSet<QPair<int, int>> visited;
-
+    // Define a boundary for the BFS
     int grid_min_ix = min_ix - 1;
     int grid_max_ix = max_ix + 1;
     int grid_min_iy = min_iy - 1;
     int grid_max_iy = max_iy + 1;
 
-    auto tryAddToOuterQueue = [&](int ix, int iy) {
+    QSet<QPair<int, int>> reachable_from_outside;
+    std::queue<QPair<int, int>> outer_q;
+
+    // Helper function to add valid points to start BFS
+    auto trySeedOuterQueue = [&](int ix, int iy) {
         QPair<int, int> point = {ix, iy};
-        if (fireGridPoints.find(point) == fireGridPoints.end() &&
-            visited.find(point) == visited.end()) {
-            visited.insert(point);
-            outer_q.push(point);
+        if (fireGridPoints.find(point) == fireGridPoints.end()) {
+            if (reachable_from_outside.find(point) == reachable_from_outside.end()) {
+                reachable_from_outside.insert(point);
+                outer_q.push(point);
+            }
         }
     };
+
+    // Seed the BFS queue from the perimeter
     for (int ix = grid_min_ix; ix <= grid_max_ix; ++ix) {
-        tryAddToOuterQueue(ix, grid_max_iy);
-        tryAddToOuterQueue(ix, grid_min_iy);
+        trySeedOuterQueue(ix, grid_min_iy);
+        trySeedOuterQueue(ix, grid_max_iy);
     }
     for (int iy = grid_min_iy + 1; iy < grid_max_iy; ++iy) {
-        tryAddToOuterQueue(grid_min_ix, iy);
-        tryAddToOuterQueue(grid_max_ix, iy);
+        trySeedOuterQueue(grid_min_ix, iy);
+        trySeedOuterQueue(grid_max_ix, iy);
     }
 
-    // BFS for 'shoreline' empty coordinates
+    // Define neighbor for each direction
+    int dx[] = {0, 0, 1, -1};
+    int dy[] = {1, -1, 0, 0};
+
+    // Run the BFS to find all points reachable from the outer queue
     while (!outer_q.empty()) {
         QPair<int, int> current = outer_q.front();
         outer_q.pop();
 
         for (int i = 0; i < 4; ++i) {
             QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
-
+            // Boundary check
             if (neighbor.first < grid_min_ix || neighbor.first > grid_max_ix ||
                 neighbor.second < grid_min_iy || neighbor.second > grid_max_iy) {
                 continue;
             }
-
+            // Explore neighbor only if it's not fire and not already visited
             if (fireGridPoints.find(neighbor) == fireGridPoints.end() &&
-                visited.find(neighbor) == visited.end())
+                reachable_from_outside.find(neighbor) == reachable_from_outside.end())
             {
-                visited.insert(neighbor);
+                reachable_from_outside.insert(neighbor);
                 outer_q.push(neighbor);
             }
         }
     }
 
-    // BFS for remaining coordinates
-    QSet<QPair<int, int>> filled;
+    // Final check and insertion
+    for (int ix = min_ix; ix <= max_ix; ++ix) {
+        for (int iy = min_iy; iy <= max_iy; ++iy) {
+            QPair<int, int> current_point = {ix, iy};
 
-    for (const auto& candidate : potentialPoints) {
-
-        if (filled.find(candidate) == filled.end() &&
-            filled.find(candidate) == filled.end())
-        {
-            // Begin fill.
-            std::queue<QPair<int, int>> fill_q;
-            fill_q.push(candidate);
-
-            while (!fill_q.empty()) {
-                QPair<int, int> current = fill_q.front();
-                fill_q.pop();
-
-                for (int i = 0; i < 4; ++i) {
-                    QPair<int, int> neighbor = {current.first + dx[i], current.second + dy[i]};
-
-                    // Check if inbounds
-                    // Check if in fire grid
-                    // Check if reachable
-                    // Check if filled
-                    if (neighbor.first >= min_ix && neighbor.first <= max_ix &&
-                        neighbor.second >= min_iy && neighbor.second <= max_iy &&
-                        fireGridPoints.find(neighbor) == fireGridPoints.end() &&
-                        visited.find(neighbor) == visited.end() &&
-                        filled.find(neighbor) == filled.end())
-                    {
-                        filled.insert(neighbor);
-                        QPair<double,double> coord(static_cast<double>(neighbor.first) * delta,static_cast<double>(neighbor.second) * delta);
-                        m_fireMap->insert(coord);
-                        fill_q.push(neighbor);
-                    }
-                }
+            // Check if inbounds
+            // Check if in fire grid
+            // Check if reachable
+            if (fireGridPoints.find(current_point) == fireGridPoints.end() &&
+                reachable_from_outside.find(current_point) == reachable_from_outside.end())
+            {
+                double real_x = static_cast<double>(ix) * delta;
+                double real_y = static_cast<double>(iy) * delta;
+                m_fireMap->insert({real_x, real_y});
             }
         }
     }
@@ -303,6 +273,7 @@ void MapController::droneDemo(){
         mapFillScan();
     }
     if(state == 50){
+        qDebug() << "beginning removal";
         double lat = 34.0591;
         double lon =  -117.82047;
         for(int i = 15; i < 20; i++){
