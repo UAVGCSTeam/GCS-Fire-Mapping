@@ -57,7 +57,7 @@ MapController::MapController(QObject *parent)
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
             if(i < 15 || i > 20 || j < 15 || j > 20){
-                addMarker({lat-inc*i,lon+inc*j},1);
+                addOverlayMarker({lat-inc*i,lon+inc*j},1);
             }
         }
     }
@@ -65,7 +65,7 @@ MapController::MapController(QObject *parent)
     lon =  -117.821;
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
-            addMarker({lat-inc*i,lon+inc*j},0);
+            addOverlayMarker({lat-inc*i,lon+inc*j},0);
         }
     }
     //for time to flow in demo
@@ -146,22 +146,20 @@ QPair<double,double> MapController::roundCoordinates(const QPair<double,double> 
     return QPair<double,double>(round(c.first/delta) * delta,round(c.second/delta) * delta);
 }
 
-void MapController::addMarker(const QPair<double, double> &c, int type){
+void MapController::addOverlayMarker(const QPair<double, double> &c, int type){
     QPair<double,double> p = roundCoordinates(c);
     if(type == 1){
+        m_smokeMap->remove(p);
         m_fireMap->insert(p);
     }else if(!(m_fireMap->contains(p))){
         m_smokeMap->insert(p);
     }
 }
 
-void MapController::removeMarker(const QPair<double, double> &c, int type){
+void MapController::removeOverlayMarker(const QPair<double, double> &c){
     QPair<double,double> p = roundCoordinates(c);
-    if(type == 1){
-        m_fireMap->remove(p);
-    }else{
-        m_smokeMap->remove(p);
-    }
+    m_smokeMap->remove(p);
+    m_fireMap->remove(p);
 }
 void MapController::mapFillScan() {
 
@@ -278,7 +276,7 @@ void MapController::droneDemo(){
         double lon =  -117.82047;
         for(int i = 15; i < 20; i++){
             for(int j = 15; j < 20; j++){
-                removeMarker({lat-delta*i,lon+delta*j},1);
+                removeOverlayMarker({lat-delta*i,lon+delta*j});
             }
         }
         state = 0;

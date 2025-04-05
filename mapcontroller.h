@@ -63,8 +63,8 @@ private:
     void addMarker(const QPair<double, double> &position);
 
     //Fire overlay update functions
-    void addMarker(const QPair<double, double> &c, int type);
-    void removeMarker(const QPair<double, double> &c, int type);
+    void addOverlayMarker(const QPair<double, double> &c, int type = 1);
+    void removeOverlayMarker(const QPair<double, double> &c);
 
     QPair<double,double> roundCoordinates(const QPair<double,double> &c);
 
