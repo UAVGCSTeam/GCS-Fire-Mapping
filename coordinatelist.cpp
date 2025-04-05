@@ -51,7 +51,6 @@ bool CoordinateList::remove(const QPair<double,double> &c){
         return false;
     }
     int end = m_list.count() - 1;
-    beginRemoveRows(QModelIndex(), end, end);
     if (index != end) {
         const QPair<double, double> &key = m_list.last().coordinate;
         m_hash[key] = index;
@@ -59,6 +58,7 @@ bool CoordinateList::remove(const QPair<double,double> &c){
         QModelIndex modelIndex = createIndex(index, 0);
         emit dataChanged(modelIndex, modelIndex);
     }
+    beginRemoveRows(QModelIndex(), end, end);
     m_list.removeLast();
     m_hash.remove(c);
     endRemoveRows();

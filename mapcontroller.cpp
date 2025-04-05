@@ -57,7 +57,7 @@ MapController::MapController(QObject *parent)
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
             if(i < 15 || i > 20 || j < 15 || j > 20){
-                addMarker({lat-inc*j,lon+inc*i},1);
+                addMarker({lat-inc*i,lon+inc*j},1);
             }
         }
     }
@@ -65,7 +65,7 @@ MapController::MapController(QObject *parent)
     lon =  -117.821;
     for(int i = 0; i < 32; i++){
         for(int j = 0; j < 32; j++){
-            addMarker({lat-inc*j,lon+inc*i},0);
+            addMarker({lat-inc*i,lon+inc*j},0);
         }
     }
     //for time to flow in demo
@@ -115,7 +115,6 @@ void MapController::setLocationMarking(const QVariant &lat, const QVariant &lon)
     addMarker(position);
 }
 
-
 // emit sends the data that our cpp logic did to our QML files
 void MapController::changeMapType(int index)
 {
@@ -146,6 +145,7 @@ void MapController::addMarker(const QPair<double, double> &position)
 QPair<double,double> MapController::roundCoordinates(const QPair<double,double> &c){
     return QPair<double,double>(round(c.first/delta) * delta,round(c.second/delta) * delta);
 }
+
 void MapController::addMarker(const QPair<double, double> &c, int type){
     QPair<double,double> p = roundCoordinates(c);
     if(type == 1){
@@ -154,6 +154,7 @@ void MapController::addMarker(const QPair<double, double> &c, int type){
         m_smokeMap->insert(p);
     }
 }
+
 void MapController::removeMarker(const QPair<double, double> &c, int type){
     QPair<double,double> p = roundCoordinates(c);
     if(type == 1){
@@ -172,7 +173,7 @@ void MapController::mapFillScan() {
     int min_iy = std::numeric_limits<int>::max();
     int max_iy = std::numeric_limits<int>::min();
 
-    // Convert double coordinates to int
+    // Convert double coordinates to int and find boundary
     QSet<QPair<int,int>> fireGridPoints;
     for(int i = 0; i < m_fireMap->size(); i++){
         int ix = static_cast<int>(std::round(m_fireMap->at(i).first/ delta));
@@ -263,7 +264,7 @@ void MapController::mapFillScan() {
         if (filled.find(candidate) == filled.end() &&
             filled.find(candidate) == filled.end())
         {
-            // Begin Fill.
+            // Begin fill.
             std::queue<QPair<int, int>> fill_q;
             fill_q.push(candidate);
 
@@ -294,6 +295,7 @@ void MapController::mapFillScan() {
         }
     }
 }
+
 void MapController::droneDemo(){
     state++;
     if(state == 25){
