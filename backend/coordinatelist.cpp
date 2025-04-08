@@ -58,6 +58,22 @@ bool CoordinateList::insert(const QPair<double,double> &c){
     endInsertRows();
     return true;
 }
+bool CoordinateList::insert(const QPair<double,double> &c, const QDateTime &t){
+    int index = m_hash.value(c, -1);
+    if (index != -1) {
+        if(t > m_list[index].lastUpdated)
+            m_list[index].lastUpdated = t;
+        QModelIndex modelIndex = this->index(index);
+        emit dataChanged(modelIndex, modelIndex, {LastUpdatedRole});
+        return false;
+    }
+    index = m_list.count();
+    beginInsertRows(QModelIndex(), index, index);
+    m_list.append(CoordinateData(c, t));
+    m_hash[c] = index;
+    endInsertRows();
+    return true;
+}
 // Removes a coordinate
 // Uses Swap&Pop for performant removal
 bool CoordinateList::remove(const QPair<double,double> &c){
@@ -84,9 +100,18 @@ bool CoordinateList::remove(const QPair<double,double> &c){
 QDateTime CoordinateList::get(const QPair<double,double> &c) const{
     int index = m_hash.value(c, -1);
     if (index == -1) {
-        return QDateTime();
+        return QDateTime(); // Default constructor gives invalid time
     }
     return m_list.at(index).lastUpdated;
+}
+// Gets lastUpdated from input coordinate. For future use
+QDateTime CoordinateList::getAt(int i) const{
+    if (i >= 0 && i < m_list.count()) {
+        return m_list.at(i).lastUpdated;
+    } else {
+        qWarning() << "IndexedListModel::at() - Index" << i << "out of bounds (count:" << m_list.count() << ")";
+        return QDateTime();
+    }
 }
 // Gets coordinates from index, primarily for iteration in mapController::mapFillScan()
 QPair<double,double> CoordinateList::at(int i) const{
@@ -100,6 +125,9 @@ QPair<double,double> CoordinateList::at(int i) const{
 bool CoordinateList::contains(const QPair<double,double> &c){
     return m_hash.contains(c);
 }
-int CoordinateList::size(){
+int CoordinateList::size() const{
     return m_list.count();
 }
+
+// clear()?
+

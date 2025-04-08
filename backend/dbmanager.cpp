@@ -46,6 +46,10 @@ void DBManager::initDB() {
         qCritical() << "Table creation failed!";
     }
 
+    if (!createOverlayTable()) {
+        qCritical() << "Overlay table creation failed!";
+    }
+
     if (!createInitialDrones()) {
         qWarning() << "Failed to create initial drones.";
     }
@@ -79,8 +83,33 @@ bool DBManager::createDroneTable() {
     qDebug() << "Drones table created successfully.";
     return true;
 }
+bool DBManager::createOverlayTable(){
+    if (!gcs_db_connection.isOpen()) {
+        qCritical() << "Database is not open! Cannot create overlay table.";
+        return false;
+    }
 
+    QSqlQuery query(gcs_db_connection);
+    // Create the table to store overlay data
+    QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS overlays (
+            overlay_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            last_updated TEXT NOT NULL,
+            overlay_type TEXT NOT NULL, -- 'fire' or 'smoke'
+            UNIQUE(latitude, longitude, overlay_type) -- Prevent duplicate points per overlay type
+        );
+    )";
 
+    if (!query.exec(createTableQuery)) {
+        qCritical() << "Failed to create overlay table:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Overlays table created or already exists successfully.";
+    return true;
+}
 
 bool DBManager::isOpen() const {
     return gcs_db_connection.isOpen();
@@ -367,4 +396,98 @@ QList<QVariantMap> DBManager::fetchAllDrones() {
         qCritical() << "Failed to fetch drones:" << query.lastError().text();
     }
     return drones;
+}
+
+bool DBManager::loadOverlayMap(CoordinateList* map, const QString& type){
+    if (!map) {
+        qCritical() << "Provided CoordinateList is null.";
+        return false;
+    }
+    if (!gcs_db_connection.isOpen()) {
+        qCritical() << "Database is not open! Cannot load" << type << "map.";
+        return false;
+    }
+
+    // Clear the list before loading? Decide if you want to append or replace.
+    // list->clear(); // You'd need to implement a clear() method in CoordinateList
+
+    QSqlQuery query(gcs_db_connection);
+    query.prepare("SELECT latitude, longitude, last_updated FROM overlays WHERE overlay_type = :type");
+    query.bindValue(":type", type);
+
+    if (!query.exec()) {
+        qCritical() << "Failed to load" << type << "map data:" << query.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Loading" << type << "map data...";
+    int count = 0;
+    while (query.next()) {
+        double latitude = query.value(0).toDouble();
+        double longitude = query.value(1).toDouble();
+        QDateTime lastUpdated = QDateTime::fromString(query.value(2).toString(), Qt::ISODate); // Assuming ISO format for storage
+
+        map->insert({latitude,longitude}, lastUpdated);
+
+        count++;
+    }
+
+    qDebug() << "Loaded" << count << "points for" << type << "map.";
+    return true;
+}
+bool DBManager::saveOverlayMap(CoordinateList* map, const QString& type){
+    if (!map) {
+        qCritical() << "Provided CoordinateList is null.";
+        return false;
+    }
+    if (!gcs_db_connection.isOpen()) {
+        qCritical() << "Database is not open! Cannot save" << type << "map.";
+        return false;
+    }
+
+    gcs_db_connection.transaction();
+
+    QSqlQuery deleteQuery(gcs_db_connection);
+    deleteQuery.prepare("DELETE FROM overlays WHERE overlay_type = :type");
+    deleteQuery.bindValue(":type", type);
+    if (!deleteQuery.exec()) {
+        qCritical() << "Failed to clear existing" << type << "map data:" << deleteQuery.lastError().text();
+        gcs_db_connection.rollback();
+        return false;
+    }
+    qDebug() << "Cleared existing" << type << "map data.";
+
+
+    QSqlQuery insertQuery(gcs_db_connection);
+    insertQuery.prepare(R"(
+        INSERT INTO overlays (latitude, longitude, last_updated, overlay_type)
+        VALUES (:lat, :lon, :updated, :type)
+    )");
+
+    qDebug() << "Saving" << map->size() << "points for" << type << "map...";
+
+    for (int i = 0; i < map->size(); ++i) {
+        QPair<double, double> coord = map->at(i);
+        QDateTime lastUpdated = map->getAt(i);
+
+
+        insertQuery.bindValue(":lat", coord.first);
+        insertQuery.bindValue(":lon", coord.second);
+        insertQuery.bindValue(":updated", lastUpdated.toString(Qt::ISODate)); // Store as ISO 8601 string
+        insertQuery.bindValue(":type", type);
+
+        if (!insertQuery.exec()) {
+            qCritical() << "Failed to insert overlay point:" << insertQuery.lastError().text();
+            gcs_db_connection.rollback(); // Rollback transaction on error
+            return false;
+        }
+    }
+
+    if (!gcs_db_connection.commit()) {
+        qCritical() << "Failed to commit transaction for saving" << type << "map.";
+        return false;
+    }
+
+    qDebug() << "Successfully saved" << type << "map data.";
+    return true;
 }

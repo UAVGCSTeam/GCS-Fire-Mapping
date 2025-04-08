@@ -6,7 +6,8 @@
 #include <QPair>
 #include <QVector>
 #include "droneclass.h"
-#include "coordinatelist.h"
+#include "backend/coordinatelist.h"
+#include "backend/dbmanager.h"
 #include <QTimer>
 
 /*
@@ -27,9 +28,14 @@ class MapController : public QObject
     Q_OBJECT
 
 public:
-    explicit MapController(QObject *parent = nullptr);
+    explicit MapController(DBManager &db, QObject *parent = nullptr);
     // Q_INVOKABLE void debugPrintDrones() const;
     Q_INVOKABLE void createDrone(const QString &input_name);
+    // Fire overlay functions, public for xbee calls and user commands
+    CoordinateList* getMap(const QString &type);
+    void addOverlayMarker(const QPair<double, double> &c, int type = 1);
+    void removeOverlayMarker(const QPair<double, double> &c);
+    // Clear list?
 
 public slots:
     void setCenterPosition(const QVariant &lat, const QVariant &lon);
@@ -43,6 +49,7 @@ public slots:
     Q_INVOKABLE QAbstractListModel* fireMap() {return m_fireMap;};
     Q_INVOKABLE QAbstractListModel* smokeMap() {return m_smokeMap;};
     Q_INVOKABLE void mapFillScan();
+    void saveOverlay();
     void droneDemo();
 
 signals:
@@ -62,12 +69,10 @@ private:
     void updateCenter(const QPair<double, double> &center);
     void addMarker(const QPair<double, double> &position);
 
-    //Fire overlay update functions
-    void addOverlayMarker(const QPair<double, double> &c, int type = 1);
-    void removeOverlayMarker(const QPair<double, double> &c);
-
+    //Fire overlay
     QPair<double,double> roundCoordinates(const QPair<double,double> &c);
 
+    DBManager &dbManager;
     CoordinateList* m_fireMap;
     CoordinateList* m_smokeMap;
     //for demo

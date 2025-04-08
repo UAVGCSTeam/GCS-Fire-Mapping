@@ -10,15 +10,18 @@
 */
 
 // Define constructor for MapController class
-MapController::MapController(QObject *parent)
+MapController::MapController(DBManager &db, QObject *parent)
     // Defines all variables within our map
     : QObject(parent)
     , m_currentMapType(0)
     , m_supportedMapTypesCount(3)
+    , dbManager(db)
     , m_fireMap(new CoordinateList(this))
     , m_smokeMap(new CoordinateList(this))
     , m_droneTimer(new QTimer(this)) // for demo
 {
+    dbManager.loadOverlayMap(m_fireMap,"fire");
+    dbManager.loadOverlayMap(m_smokeMap,"smoke");
 
     // Populate with dummy drone objects for testing icon markers using setLattitude and setLongitude
     DroneClass* drone1 = new DroneClass(this);
@@ -51,23 +54,6 @@ MapController::MapController(QObject *parent)
     drone5->setLongitude(-118.4916);
     addDrone(drone5);
 
-    double lat = 34.0591;
-    double lon =  -117.82047;
-    double inc = 0.000035;
-    for(int i = 0; i < 32; i++){
-        for(int j = 0; j < 32; j++){
-            if(i < 15 || i > 20 || j < 15 || j > 20){
-                addOverlayMarker({lat-inc*i,lon+inc*j},1);
-            }
-        }
-    }
-    lat = 34.06;
-    lon =  -117.821;
-    for(int i = 0; i < 32; i++){
-        for(int j = 0; j < 32; j++){
-            addOverlayMarker({lat-inc*i,lon+inc*j},0);
-        }
-    }
     //for time to flow in demo
     connect(m_droneTimer, &QTimer::timeout, this, &MapController::droneDemo);
     m_droneTimer->start(100);
@@ -160,6 +146,11 @@ void MapController::removeOverlayMarker(const QPair<double, double> &c){
     QPair<double,double> p = roundCoordinates(c);
     m_smokeMap->remove(p);
     m_fireMap->remove(p);
+}
+
+void MapController::saveOverlay(){
+    dbManager.saveOverlayMap(m_fireMap,"fire");
+    dbManager.saveOverlayMap(m_smokeMap, "smoke");
 }
 void MapController::mapFillScan() {
 
