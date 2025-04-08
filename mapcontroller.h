@@ -6,7 +6,6 @@
 #include <QPair>
 #include <QVector>
 #include "droneclass.h"
-#include "backend/coordinatelist.h"
 #include "backend/dbmanager.h"
 #include <QTimer>
 

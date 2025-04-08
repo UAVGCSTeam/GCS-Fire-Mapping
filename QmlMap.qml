@@ -70,7 +70,7 @@ Item
         }
         MapItemView{
 
-                    model: mapController.smokeMap()
+                    model: mapController ? mapController.smokeMap() : null
                     opacity: 0.25
                     layer.enabled: true
                     visible: smokeMarkersItem.checked
@@ -83,7 +83,7 @@ Item
         }
         MapItemView{
 
-                    model: mapController.fireMap()
+                    model: mapController ? mapController.fireMap() : null
                     opacity: 0.3
                     layer.enabled: true
                     visible: fireMarkersItem.checked
