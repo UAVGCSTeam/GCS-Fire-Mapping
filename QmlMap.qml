@@ -68,6 +68,96 @@ Item
             grabPermissions: PointerHandler.TakeOverForbidden
             onTranslationChanged: (delta) => { mapview.pan(-delta.x, -delta.y); }
         }
+
+        MapItemView{
+            id: smokeVisualLayer
+            model: mapController ? mapController.smokeMap() : null
+            opacity: 0.30
+            layer.enabled: true
+            visible: smokeMarkersItem.checked // Link visibility
+            delegate: MapCircle{
+                border.width: 0
+                center: QtPositioning.coordinate(model.latitude, model.longitude)
+                radius: 2.53
+                color: 'black'
+            }
+        }
+        MapItemView {
+            id: smokeInteractionLayer
+            model: mapController ? mapController.smokeMap() : null
+            opacity: 0.8
+            layer.enabled: true
+            visible: smokeMarkersItem.checked
+            delegate: MapQuickItem {
+            coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
+            anchorPoint.x: smokeInteractionItem.width / 2
+            anchorPoint.y: smokeInteractionItem.height / 2
+            sourceItem: Item {
+                id: smokeInteractionItem
+                width: 20
+                height: 20
+                Text {
+                    id: smokeTooltip
+                    visible: smokeMouseArea.containsMouse
+                    x: parent.width / 2 - width / 2
+                    y: -height - 5
+                    text: model.lastUpdated ? new Date(model.lastUpdated).toLocaleString(Qt.locale(), Locale.ShortFormat) : "N/A"
+                    font.pixelSize: 20; color: "black"; padding: 4
+                }
+                MouseArea {
+                    id: smokeMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    }
+                }
+            }
+        }
+
+        MapItemView{
+                     id: fireVisualLayer
+                     model: mapController ? mapController.fireMap() : null
+                     opacity: 0.3 // Opacity applied here
+                     layer.enabled: true
+                     visible: fireMarkersItem.checked // Link visibility
+                     delegate: MapCircle{
+                         border.width: 0
+                         center: QtPositioning.coordinate(model.latitude, model.longitude)
+                         radius: 2.53
+                         color: 'red'
+                     }
+                }
+
+        MapItemView {
+            id: fireInteractionLayer
+            model: mapController ? mapController.fireMap() : null
+            opacity: 0.8
+            layer.enabled: true
+            visible: fireMarkersItem.checked
+            delegate: MapQuickItem {
+            coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
+            anchorPoint.x: fireInteractionItem.width / 2
+            anchorPoint.y: fireInteractionItem.height / 2
+            sourceItem: Item {
+                id: fireInteractionItem
+                width: 20
+                height: 20
+                Text {
+                    id: fireTooltip
+                    visible: fireMouseArea.containsMouse
+                    x: parent.width / 2 - width / 2
+                    y: -height - 5
+                    text: model.lastUpdated ? new Date(model.lastUpdated).toLocaleString(Qt.locale(), Locale.ShortFormat) : "N/A"
+                    font.pixelSize: 20; color: "black"; padding: 4
+                }
+                MouseArea {
+                    id: fireMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    }
+                }
+            }
+        }
+
         MapItemView
         {
             // Create list for all pins (Will be used to track drones later with some optimization)

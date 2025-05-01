@@ -18,6 +18,7 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
+#include "coordinatelist.h"
 
 class DBManager : public QObject {
     Q_OBJECT
@@ -57,10 +58,14 @@ public:
 
     // Declaration to fetch all drone records from the database
     QList<QVariantMap> fetchAllDrones();
+    // Declaration to load & save fire and smoke overlay elements
+    bool loadOverlayMap(CoordinateList* map, const QString& type);
+    bool saveOverlayMap(CoordinateList* map, const QString& type);
 
 private:
     QSqlDatabase gcs_db_connection;
     bool createDroneTable();
+    bool createOverlayTable();
     // private function to check if drone pre-exists, using name.
     bool checkIfDroneExists(const QString& droneName);
     bool createInitialDrones();

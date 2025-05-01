@@ -121,8 +121,12 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     // Create and register MapController as an object that the cpp can use
-    MapController mapController;
+    // Load fire and smoke database into map
+    MapController mapController(gcs_db_manager);
     engine.rootContext()->setContextProperty("mapController", &mapController);
+    // Saves on closing
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &mapController, &MapController::saveOverlay);
+
 
     // Register the FileHandler class so that it can be used in QML
     qmlRegisterType<FileHandler>("com.gcs.filehandler", 1, 0, "FileHandler");

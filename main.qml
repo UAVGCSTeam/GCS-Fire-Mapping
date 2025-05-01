@@ -133,6 +133,22 @@ Window {
                 }
             }
         }
+        Menu{
+          id: viewMenu
+          title: qsTr("View")
+          MenuItem {
+            id: fireMarkersItem
+            text: qsTr("Fire Markers")
+            checkable: true
+            checked: true
+          }
+          MenuItem {
+            id: smokeMarkersItem
+            text: qsTr("Smoke Markers")
+            checkable: true
+            checked: true
+          }
+        }
     }
 
     // Creates pop-up for Delete drone command
